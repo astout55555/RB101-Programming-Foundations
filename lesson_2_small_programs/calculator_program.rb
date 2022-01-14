@@ -1,37 +1,41 @@
-# ask the user for two numbers
-# ask the user for an operation to perform
-# peform the operation on the two numbers
-# output the result
+require 'yaml'
+MESSAGES = YAML.load_file('calculator_messages.yml')
+# only using this for regular strings for now. using a configuration file with string interpolation
+# requires a bunch of finangling, and it'll be a better use of time to simply move to the next assignment
 
 def prompt(message)
   Kernel.puts("=> #{message}")
 end
 
-def valid_number?(num)
-  num.to_i.to_s == num
+def number?(input) # check to make sure input is a number (integer or float)
+  input.to_i.to_s == input || input.to_f.to_s == input # true if it's either an integer or a float
 end
 
-def operation_to_message(op)
-  case op
-  when '1'
-    'Adding'
-  when '2'
-    'Subtracting'
-  when '3'
-    'Multiplying'
-  when '4'
-    'Dividing'
-  end
+def operation_to_message(input)
+  operation = case input
+              when '1'
+                'Adding'
+              when '2'
+                'Subtracting'
+              when '3'
+                'Multiplying'
+              when '4'
+                'Dividing'
+              end
+
+  prompt("You say you want to do some #{operation.downcase}? Okay then!")
+
+  operation
 end
 
-prompt('Welcome to Calculator! Enter your name:')
+prompt(MESSAGES['welcome'])
 
 name = ''
 loop do
   name = Kernel.gets.chomp
 
-  if name.empty?
-    prompt('Make sure to use a valid name!')
+  if name == name.to_i.to_s || name.empty?
+    prompt(MESSAGES['valid_name'])
   else
     break
   end
@@ -40,25 +44,25 @@ end
 loop do
   number1 = 0
   loop do
-    prompt("What's the first number?")
+    prompt(MESSAGES['first_number'])
     number1 = Kernel.gets.chomp
 
-    if valid_number?(number1)
+    if number?(number1)
       break
     else
-      prompt("Please enter an integer.")
+      prompt(MESSAGES['valid_number'])
     end
   end
 
   number2 = 0
   loop do
-    prompt("What's the second number?")
+    prompt(MESSAGES['second_number'])
     number2 = Kernel.gets.chomp
 
-    if valid_number?(number2)
+    if number?(number2)
       break
     else
-      prompt("Hmm, that doesn't look like a valid number.")
+      prompt(MESSAGES['valid_number'])
     end
   end
 
@@ -77,7 +81,7 @@ loop do
     if %w(1 2 3 4).include?(operator)
       break
     else
-      prompt('Please enter a number 1-4 to choose your operation.')
+      prompt(MESSAGES['valid_operation'])
     end
   end
 
@@ -85,20 +89,20 @@ loop do
 
   result = case operator
            when '1'
-             number1.to_i + number2.to_i
+             number1.to_f + number2.to_f
            when '2'
-             number1.to_i - number2.to_i
+             number1.to_f - number2.to_f
            when '3'
-             number1.to_i * number2.to_i
+             number1.to_f * number2.to_f
            when '4'
              number1.to_f / number2.to_f
            end
 
   prompt("The result is #{result}")
 
-  prompt('Do you want to perform another calculation? (Y to calculate again)')
+  prompt(MESSAGES['again'])
   answer = Kernel.gets.chomp
   break unless answer.downcase.start_with?('y')
 end
 
-prompt('Thank you for calculating with me!')
+prompt("Thank you for calculating with me, #{name}!")
