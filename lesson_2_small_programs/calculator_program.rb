@@ -1,14 +1,15 @@
 require 'yaml'
 MESSAGES = YAML.load_file('calculator_messages.yml')
-# only using this for regular strings for now. using a configuration file with string interpolation
-# requires a bunch of finangling, and it'll be a better use of time to simply move to the next assignment
+# only using this for regular strings for now.
+# using a config file with string interpolation requires a bunch of finangling,
+# so I've decided to skip to the next assignment and continue learning instead.
 
 def prompt(message)
   Kernel.puts("=> #{message}")
 end
 
 def number?(input) # check to make sure input is a number (integer or float)
-  input.to_i.to_s == input || input.to_f.to_s == input # true if it's either an integer or a float
+  input.to_i.to_s == input || input.to_f.to_s == input
 end
 
 def operation_to_message(input)
