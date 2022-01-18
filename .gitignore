@@ -1,2 +1,3 @@
-# Ignore my test file, not a project to push, just a place to work with code beyond irb.
+# Ignoring test files--places to work with code beyond irb and/or take notes.
 test101.rb
+lesson_2_small_programs/cop_test.rb
