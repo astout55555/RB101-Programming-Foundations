@@ -25,8 +25,6 @@ def win?(player, computer)
     true
   elsif RULES[computer.to_sym].include?(player)
     false
-  else
-    nil
   end
 end
 
@@ -34,14 +32,12 @@ def display_results(player, computer, scoreboard)
   prompt("You chose: #{player}; Computer chose: #{computer}")
   if win?(player, computer) == true
     prompt("You won!")
-    prompt(scoreboard)
   elsif win?(player, computer) == false
     prompt("Computer won!")
-    prompt(scoreboard)
-  else win?(player, computer) == nil
+  else
     prompt("It's a tie!")
-    prompt(scoreboard)
   end
+  prompt(scoreboard)
 end
 
 rules_message = <<MSG
@@ -90,9 +86,20 @@ loop do
   scoreboard = "Your score: #{player_score}; Computer score: #{computer_score}."
   display_results(choice, computer_choice, scoreboard)
 
-  prompt("Do you want to play again?")
-  answer = Kernel.gets().chomp()
-  break unless answer.downcase().start_with?('y')
-end
+  answer = ''
+  loop do
+    prompt("Do you want to play again?")
+    answer = Kernel.gets().chomp().downcase()
+    if answer.start_with?('y')
+      prompt("Okay!")
+      break
+    elsif answer.start_with?('n')
+      prompt("Thank you for playing. Goodbye!")
+      break
+    else
+      prompt("I didn't understand you. Please answer with 'y' or 'n'.")
+    end
+  end
 
-prompt("Thank you for playing. Goodbye!")
+  break unless answer.start_with?('y')
+end
