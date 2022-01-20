@@ -2,26 +2,34 @@ def prompt(message)
   puts ">> #{message}"
 end
 
-def sum(int)
-  total = 0
-  1.upto(int) { |i| total += i }
-  total
+def valid_number?(input)
+  input.to_i.to_s == input && input.to_i.positive?
 end
 
-def product(int)
-  total = 1
-  1.upto(int) { |i| total *= i }
-  total
+int = 0
+loop do
+  prompt('Please enter an integer greater than 0:')
+  input = gets.chomp
+  if valid_number?(input)
+    int = input.to_i
+    break
+  else
+    prompt('Invalid entry.')
+  end
 end
 
-prompt("Please enter an integer greater than 0:")
-int = gets.chomp.to_i
+operation = ''
+loop do
+  prompt("Enter 's' to compute the sum, or 'p' to compute the product.")
+  operation = gets.chomp.downcase
+  valid_responses = %w[s p]
+  break if valid_responses.include?(operation)
 
-prompt("Enter 's' to compute the sum, or 'p' to compute the product.")
-operation = gets.chomp
+  prompt("Invalid entry. And don't ask 'Of what?' just do what I tell you!")
+end
 
-sum_total = sum(int)
-prod_total = product(int)
+sum_total = 1.upto(int).inject(:+)
+prod_total = 1.upto(int).inject(:*)
 
 case operation
 when 's' then puts "The sum of the integers between 1 and #{int} is #{sum_total}."
