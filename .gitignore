@@ -1,3 +1,5 @@
 # Ignoring test files--places to work with code beyond irb and/or take notes.
 test101.rb
 lesson_2_small_programs/cop_test.rb
+load.rb
+load2.rb

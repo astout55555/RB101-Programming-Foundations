@@ -20,19 +20,19 @@ def prompt(message)
   Kernel.puts("=> #{message}")
 end
 
-def win?(player, computer)
-  if RULES[player.to_sym].include?(computer)
+def win?(player_choice, computer_choice)
+  if RULES[player_choice.to_sym].include?(computer_choice)
     true
-  elsif RULES[computer.to_sym].include?(player)
+  elsif RULES[computer_choice.to_sym].include?(player_choice)
     false
   end
 end
 
-def display_results(player, computer, scoreboard)
-  prompt("You chose: #{player}; Computer chose: #{computer}")
-  if win?(player, computer) == true
+def display_results(player_choice, computer_choice, scoreboard)
+  prompt("You chose: #{player_choice}; Computer chose: #{computer_choice}")
+  if win?(player_choice, computer_choice) == true
     prompt("You won!")
-  elsif win?(player, computer) == false
+  elsif win?(player_choice, computer_choice) == false
     prompt("Computer won!")
   else
     prompt("It's a tie!")
@@ -59,32 +59,32 @@ computer_score = 0
 scoreboard = ''
 
 loop do
-  choice = ''
+  player_move = ''
   loop do
     prompt("Choose one: #{VALID_CHOICES.join(', ')}, or just the first letter.")
     prompt("(If you abbreviate, use 's' for 'scissors', or 'S' for 'Spock'.)")
-    choice = Kernel.gets().chomp()
+    player_move = Kernel.gets().chomp()
 
-    if VALID_CHOICES.include?(choice)
+    if VALID_CHOICES.include?(player_move)
       break
-    elsif VALID_ABBREVIATIONS.key?(choice.to_sym)
-      choice = VALID_ABBREVIATIONS[choice.to_sym]
+    elsif VALID_ABBREVIATIONS.key?(player_move.to_sym)
+      player_move = VALID_ABBREVIATIONS[player_move.to_sym]
       break
     else
       prompt("That's not a valid choice.")
     end
   end
 
-  computer_choice = VALID_CHOICES.sample
+  computer_move = VALID_CHOICES.sample
 
-  if win?(choice, computer_choice) == true
+  if win?(player_move, computer_move) == true
     player_score += 1
-  elsif win?(choice, computer_choice) == false
+  elsif win?(player_move, computer_move) == false
     computer_score += 1
   end
 
   scoreboard = "Your score: #{player_score}; Computer score: #{computer_score}."
-  display_results(choice, computer_choice, scoreboard)
+  display_results(player_move, computer_move, scoreboard)
 
   answer = ''
   loop do
