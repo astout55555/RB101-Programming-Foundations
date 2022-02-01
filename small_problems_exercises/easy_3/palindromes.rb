@@ -100,3 +100,60 @@ p real_palindrome?("Madam, I'm Adam") == true # (only alphanumerics matter)
 p real_palindrome?('356653') == true
 p real_palindrome?('356a653') == true
 p real_palindrome?('123ab321') == false
+
+# you can instead use String#delete, which uses rules that look
+# similar to a regex when determining what to delete
+
+
+### Palindromic Numbers
+
+=begin
+
+Prob: method returns true if integer arg is a palindrome, else false
+
+Examples: found in exercise
+
+Data/Alg: convert to string, check if reverse == original
+
+=end
+
+require 'pry'
+
+def palindromic_number?(number)
+  number.to_s == number.to_s.reverse
+end
+
+# these all print true
+p palindromic_number?(34543) == true
+p palindromic_number?(123210) == false
+p palindromic_number?(22) == true
+p palindromic_number?(5) == true
+
+
+## Further Exploration: Does this work with a number that starts with a 0?
+
+p palindromic_number?(0012100) == true # doesn't work, prints false
+
+# starting a number literal with a 0 tells Ruby to read it as an "octal" number
+# e.g. 0252 or 00252 == 170
+# however, I can convert the number back to decimal when converting to string #to_s(8)
+
+=begin
+
+Prob: method returns true if integer arg is a palindrome, else false
+do so even if the number begins with one or more `0`
+
+I need to be able to compare the reverse order of the actual digits provided
+if there are leading 0s, I need to know how many so I can take that into account
+I know any octal number will have at least one 0 provided, but could be more than one
+I know any octal number that doesn't end with at least one 0 is not a palindrome
+
+...
+like most other students I was unable to find a way to solve this problem
+unless we are given a string via user input in the first place,
+rather than passing the method an argument
+because I can't tell the difference between `0253` and `171`,
+and any conversion or check I do will be done with the numeric value of the reference passed, not the literal digits
+...
+
+=end
