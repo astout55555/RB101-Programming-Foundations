@@ -157,3 +157,22 @@ and any conversion or check I do will be done with the numeric value of the refe
 ...
 
 =end
+
+# the below is borrowed from another student, for this problem
+# it only works if there was only one leading 0, and you also
+# have to know it was an octal number in the first place.
+# but this is what I was thinking is the best we can do for this problem
+
+def octal_palindrome?(integer)
+  octal_number = integer.to_s(8)
+
+  if !octal_number.end_with?('0')
+    return false
+  else
+    while octal_number.end_with?('0')
+      octal_number.chop!
+    end
+  end
+
+  octal_number = octal_number.reverse
+end
