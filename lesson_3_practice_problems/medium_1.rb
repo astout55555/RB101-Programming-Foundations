@@ -133,9 +133,27 @@ end
 
 mess_with_demographics(munsters)
 
-# Surprisingly, yes! Remember, `[]` and `[]=` are actually methods
-# you can call on a hash (or an array) to retrieve or update its values.
-# This is NOT the same as using reassignment! Reassignment wouldn't affect
+# Surprisingly, yes! Remember, `[]=` is actually a method
+# you can call on a hash (or an array) to update its values.
+# This is NOT the same as using reassignment! #[] is similar to #fetch,
+# while #[]= is an alias for #store. Neither are simply assignment.
+# But it's not that simple either!
+# The #[]= method is mutating with respect to the hash (or array),
+# i.e. it changes a value within the hash without reassigning the hash itself,
+# so this is capable of changing the hash permanently even outside the scope
+# of the method definition.
+# On the other hand, it is non-mutating with respect to the key whose value
+# is changed. You can tell by calling the #object_id method on the hash and
+# the key before and after calling the #[]= method on the key (changing the
+# value associated with the key), but you can also tell because in this case
+# we are also changing an immutable value--a number--associated with the
+# key 'age'. Because numbers are immutable, what we must be doing is
+# reassigning the 'key' to a new place in memory with a new object,
+# a different number. But because we did this while mutating the original
+# hash (or array), that change stays, despite involving reassignment.
+
+
+#Reassignment wouldn't affect
 # the original object, or the value of the original reference when used in
 # a method, but the #[]= method does mutate the object!
 
