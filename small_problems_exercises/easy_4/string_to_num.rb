@@ -102,7 +102,7 @@ end
 # the above works but I have to include the whole case statement within the method definition
 # official solution recommends working with a separate hash with mapped values instead
 
-DIGITS = {
+HEX_DIGITS = {
   '0' => 0, '1' => 1, '2' => 2, '3' => 3, 
   '4' => 4, '5' => 5, '6' => 6, '7' => 7,
   '8' => 8, '9' => 9, 'A' => 10, 'B' => 11,
@@ -112,7 +112,7 @@ DIGITS = {
 def dec_or_hex_string_to_integer(string, base=10) # I'm modifying to work for both types
   return nil if base != 10 && base != 16
 
-  digits = string.chars.map { |char| DIGITS[char.upcase] } # updated to work with letters
+  digits = string.chars.map { |char| HEX_DIGITS[char.upcase] } # updated to work with letters
 
   value = 0
   digits.each { |digit| value = base * value + digit } # slight modification to work for either hex or dec
@@ -127,3 +127,72 @@ puts 'End of part 1 exercises/tests.'
 
 ### Convert a String to a Signed Number!
 
+=begin
+
+input: numeric string that may have + or - in front
+output: positive or negative integer depending on sign
+can use method from earlier
+
+break string into characters
+check if first character is a '+' or '-'
+remove it if so
+store positive or negative in variable, flip boolean if '-'
+keep the rest the same to process value, convert to integer
+
+=end
+
+DIGITS = {
+  '0' => 0, '1' => 1, '2' => 2,
+  '3' => 3, '4' => 4, '5' => 5,
+  '6' => 6, '7' => 7, '8' => 8, '9' => 9,
+}
+
+def string_to_signed_integer(numeric_string)
+  positive = true
+  string_array = numeric_string.chars
+  if string_array[0] == '-'
+    positive = false
+    string_array.shift
+  elsif string_array[0] == '+'
+    string_array.shift
+  end
+
+  digits = string_array.map { |char| DIGITS[char] }
+
+  value = 0
+  digits.each { |digit| value = 10 * value + digit }
+  
+  positive ? value : -value
+end
+
+
+string_to_signed_integer('4321') == 4321
+string_to_signed_integer('-570') == -570
+string_to_signed_integer('+100') == 100
+
+# Official solution: this is how I can reuse the old method:
+
+def string_to_signed_integer(string)
+  case string[0]
+  when '-' then -string_to_integer(string[1..-1]) # range from 2nd character to final character
+  when '+' then string_to_integer(string[1..-1])
+  else          string_to_integer(string)
+  end
+end
+
+## Further Exploration: Refactor Method to only call #string[1..-1] and #string_to_integer once each
+
+def string_to_signed_integer(string)
+  modifier = 1
+  case string[0]
+  when '-' then modifier = -1
+  when '+' then modifier = 1
+  else          string = '+' + string
+  end
+  string_to_integer(string[1..-1]) * modifier
+end
+
+p string_to_signed_integer('4321') == 4321
+p string_to_signed_integer('-570') == -570
+p string_to_signed_integer('+100') == 100
+# all print true still
