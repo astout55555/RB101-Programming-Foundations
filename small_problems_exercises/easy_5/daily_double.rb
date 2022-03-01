@@ -46,8 +46,6 @@ def crunch(text)
   crunch_text
 end
 
-## Further Exploration
+## Further Exploration: Try solving again using a regexp.
 
-# Why didn't they use #char or #each_char like I did?
-
-# Try solving again using a regexp.
+# I'll come back to this one after I learn more about regexp.
