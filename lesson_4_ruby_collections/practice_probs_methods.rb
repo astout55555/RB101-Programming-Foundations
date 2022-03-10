@@ -73,11 +73,49 @@ hash.shift
   num.odd?
 end
 
-# return value of the block => [true, false, true]
-# return value of #any? => [true]
-# this is because 1 and 3 are odd numbers, but 2 is not, and so
+# return value of #any? `=> true` (a single boolean value)
 # #any? returns true because at least one of the elements fed to the
-# block as an argument returned true.
+# block as an argument returned a truthy value.
+# return value of the block `=> true`
+# the block would normally have a return value for each element being checked,
+# but #any? stops iterating after it evaluates a single truthy value
+# and returns the boolean.
+# this means that `puts num` only triggers for the first number in the array!
 
 ## Practice Problem 8
 
+arr = [1, 2, 3, 4, 5]
+arr.take(2)
+
+# => [1, 2]
+# #take(n) returns the first n elements in an array (n must be a non-negative integer)
+# it is not destructive
+
+## Practice Problem 9
+
+{ a: 'ant', b: 'bear' }.map do |key, value|
+  if value.size > 3
+    value
+  end
+end
+
+# => [nil, 'bear']
+# #map returns an array of objects returned by the block
+# if...end returns nil if the condition is not met and no `else` is
+# specified. #map will always return an array equal in size to the
+# original collection it is called on.
+
+## Practice Problem 10
+
+[1, 2, 3].map do |num|
+  if num > 1
+    puts num
+  else
+    num
+  end
+end
+
+# => [1, nil, nil]
+# first element doesn't pass the if condition, so the else code runs and
+# returns the element 1. after that, the two remaining elements pass the
+# if condition, and so `puts num` is evaluated and returns nil.
