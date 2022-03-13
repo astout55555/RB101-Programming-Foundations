@@ -251,8 +251,9 @@ input: munsters hash (multidimensional hash, age and gender attached to each mem
 output: munster hash with added key=>value pair of "age_group" and kid/adult/senior
 Rules: kid is 0-17, adult is 18-64, senior is 65+
 
-iterate through hash
-  for each name, retrieve the age integer
+iterate through hash values
+  for each subhash
+    retrieve the age integer
     insert new key/value pair with appropriate value based on age
 return modified hash
 
@@ -266,16 +267,30 @@ munsters = {
   "Marilyn" => { "age" => 23, "gender" => "female"}
 }
 
-# names = munsters.keys
+munsters.each do |key, value|
+  age = value['age']
+  if age <= 17
+    value['age_group'] = 'kid'
+  elsif age >= 65
+    value['age_group'] = 'senior'
+  else
+    value['age_group'] = 'adult'
+  end
+end
 
-# munsters.each do |key, value|
-#   if value.values[0] <= 17
-#     key['age_group'] = 'kid'
-#   elsif value.values[0] >= 65
-#     key['age_group'] = 'senior'
+p munsters
+
+# Official solution
+# parameter names are more descriptive
+# case statement with ranges is cleaner
+
+# munsters.each do |name, details|
+#   case details["age"]
+#   when 0...18
+#     details["age_group"] = "kid"
+#   when 18...65
+#     details["age_group"] = "adult"
 #   else
-#     key['age_group'] = 'adult'
+#     details["age_group"] = "senior"
 #   end
 # end
-
-# p munsters
