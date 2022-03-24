@@ -112,3 +112,17 @@ end
 p word_cap('four score and seven') == 'Four Score And Seven'
 p word_cap('the javaScript language') == 'The Javascript Language'
 p word_cap('this is a "quoted" word') == 'This Is A "quoted" Word'
+
+# Testing out another classmate's code, trying to understand limitations
+# on modifying substrings from within an #each block
+
+def word_cap(phrase)
+  capitalized = phrase.split(' ')
+  capitalized.each do |word|
+    word.downcase!
+    word[0] = word[0].upcase # `word[0].upcase!` doesn't work, because the String#[] method returns a new string
+  end # however, String#[] can be used to refer to the substring itself and reassign it to another value
+# because in this case we are not working with its return value, it is still referencing the original substring when reassigned
+  capitalized.join(' ') # similarly, you cannot chain the #[] or #slice methods together if you want to reassign the substring to a new value
+end # this is because `word[0, 2][1] = word[0, 2][1].upcase` e.g. has to provide the return value of `word[0, 2]`, before we can call `[1]` on it
+# it therefore doesn't work because it returns a new string, which we then assign a new value, but this does not impact the original substring
