@@ -340,14 +340,106 @@ Data: array
 each hash contains one or more key/value pairs, keys are symbols, values are arrays of integers
 
 Algorithm:
-use selection on original array
-...
-if value (sub-array within the element/hash) contains any odd numbers, reject it ...too complex for one step
-...
+create empty results array
+iterate through the original array of hashes
+  on each hash, establish a boolean value of true tied to a criterion variable
+  iterate through the values (arrays of integers)
+    iterate through each array's integers
+      if an array contains an odd number, flip the criterion variable to false
+  if the criterion variable is still true, insert the hash into the results array
+return results array
 
 =end
 
-p (
-arr.reject do |hash|
-  hash.values.any? # not quite what I need, this calls #any? on an array of all the arrays for the hash...
-)
+results_array = []
+
+arr.each do |hash|
+  criteria_met = true
+
+  hash.values.each do |integer_array|
+    integer_array.each { |num| criteria_met = false if num.odd? }
+  end
+
+  results_array << hash if criteria_met
+end
+
+results_array
+
+# LS Solution uses #select, which I figured it would but wasn't sure how to nest my method calls such that I end up with a simple boolean value when I want it
+
+arr.select do |hsh|
+  hsh.all? do |_, value| # calling #all? with a block on a hash gives the flexibility to pay attention to just the values while returning a boolean, unlike #each which would not work nested within #select
+    value.all? do |num| # nest another #all? call on the array to check every integer/element against the #even? criterion
+      num.even?
+    end
+  end
+end
+# => [{:e=>[8], :f=>[6, 10]}]
+
+### Practice Problem 16
+
+=begin
+
+# Problem: write a method that returns 1 UUID when called with no parameters
+input: no argument input, just a method call
+output: a 5-section string of 32 hexadecimal characters, structure of 8-4-4-4-12
+
+Example: "f65c57f6-a6aa-17a8-faa1-a67f2dc9fa91"
+
+Data/Algorithm:
+
+create a hexadecimal array of 16 string characters
+create an empty UUID string
+use a loop to repeatedly insert random sampled hex characters into the empty string
+  include a conditional that also inserts a '-' if the index is at the appropriate value
+  increment the index counter after every insertion
+  break once the string has a length of 36 (32 characters plus the 4 hyphens)
+output the completed UUID string
+
+=end
+
+HEXADECIMAL_CHARS = [
+  '0', '1', '2', '3',
+  '4', '5', '6', '7',
+  '8', '9', 'a', 'b',
+  'c', 'd', 'e', 'f'
+]
+
+def generate_uuid
+  uuid = ''
+  index = 0
+
+  until index == 37
+    if [8, 13, 18, 23].include?(index) # index values where '-' should go
+      uuid << '-'
+      index += 1
+      next
+    end
+
+    uuid << HEXADECIMAL_CHARS.sample
+    index += 1
+  end
+
+  uuid
+end
+
+p generate_uuid
+
+# LS Solution:
+
+def generate_UUID
+  characters = [] # generates the hexadecimal chars within the method
+  (0..9).each { |digit| characters << digit.to_s }
+  ('a'..'f').each { |digit| characters << digit }
+
+  uuid = ""
+  sections = [8, 4, 4, 4, 12] # iterates through the section sizes in an array with the index in order to generate UUID without specifying specific index values for '-' insertions, more scalable
+  sections.each_with_index do |section, index|
+    section.times { uuid += characters.sample }
+    uuid += '-' unless index >= sections.size - 1
+  end
+
+  uuid
+end
+
+# use SecureRandom#uuid if you actually need to properly generate a uuid
