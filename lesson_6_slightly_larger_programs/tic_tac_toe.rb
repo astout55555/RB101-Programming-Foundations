@@ -239,90 +239,57 @@ end
 puts 'Alright! Now just hit enter to get started.'
 gets
 
-board = initialize_board # moved down from above so it fits better in the flow of the program, even though it was part of the initial walkthrough
-display_board(board)
+loop do # main program loop
 
-loop do # main game loop
+  system 'clear'
+  board = initialize_board
+  display_board(board)
 
-  loop do # player turn loop
-    puts 'Your move:'
-    user_move = gets.chomp.to_i # using integers for the board hash keys so I need to convert it when I get it
-    if valid_move?(board, user_move)
-      board[user_move] = player_mark # place player's mark on the board according to the selected square
-      display_board(board)
-      break
-    else
-      show_tutorial_board
-      puts '^^^ As a reminder, here is the ordering for the squares. Enter a number to take your turn.'
-      display_board(board)
+  loop do # single game loop
+
+    loop do # player turn loop
+      puts 'Your move:'
+      user_move = gets.chomp.to_i # using integers for the board hash keys so I need to convert it when I get it
+      if valid_move?(board, user_move)
+        board[user_move] = player_mark # place player's mark on the board according to the selected square
+        display_board(board)
+        break
+      else
+        show_tutorial_board
+        puts '^^^ As a reminder, here is the ordering for the squares. Enter a number to take your turn.'
+        display_board(board)
+      end
     end
+
+    break if player_won?(board, player_mark) || full_board?(board)
+
+    loop do # computer turn loop
+      computer_move = (1..9).to_a.sample # random position between 1 and 9
+      if valid_move?(board, computer_move)
+        puts 'My supercomputer will surely outsmart you! Take your turn my pretty!'
+        board[computer_move] = computer_mark
+        display_board(board)
+        break
+      end
+    end
+
+    break if computer_won?(board, computer_mark) || full_board?(board)
+
   end
 
   if player_won?(board, player_mark)
     puts "It's not possible! How could my magnificent creation lose!?"
     puts 'I want a rematch! Do you accept? y/n'
-    play_again = gets.chomp.downcase
-    if (play_again == 'y') || (play_again == 'yes')
-      board = initialize_board
-      system 'clear' # to clean up the game space if we're starting over
-      display_board(board)
-      next # skips to the end of the game loop and starts over after displaying the newly cleared board
-    else
-      break
-    end
-  end
-
-  if full_board?(board) # this doubles as a check for a tie because I'm calling this method after checking for a victor
-    puts "Looks like this game is a tie. That's a bit unsatisfying, huh?"
-    puts 'Would you like to play again? y/n'
-    play_again = gets.chomp.downcase
-    if play_again == 'y'
-      board = initialize_board
-      system 'clear'
-      display_board(board)
-      next
-    else
-      break
-    end
-  end
-
-  loop do # computer turn loop
-    computer_move = (1..9).to_a.sample # random position between 1 and 9
-    if valid_move?(board, computer_move)
-      puts 'My supercomputer will surely outsmart you! Take your turn my pretty!'
-      board[computer_move] = computer_mark
-      display_board(board)
-      break
-    end
-  end
-
-  if computer_won?(board, computer_mark)
+  elsif computer_won?(board, computer_mark)
     puts "Ha! I knew you couldn't defeat my supercomputer!"
     puts 'Would you like to give it another shot, you loser? y/n'
-    play_again = gets.chomp.downcase
-    if play_again == 'y'
-      board = initialize_board
-      system 'clear'
-      display_board(board)
-      next
-    else
-      break
-    end
-  end
-
-  if full_board?(board) # again, the game is a tie if this is true at this point
+  else
     puts "Looks like this game is a tie. That's a bit unsatisfying, huh?"
     puts 'Would you like to play again? y/n'
-    play_again = gets.chomp.downcase
-    if play_again == 'y'
-      board = initialize_board
-      system 'clear'
-      display_board(board)
-      next
-    else
-      break
-    end
   end
+
+  play_again = gets.chomp.downcase
+  break unless (play_again == 'y') || (play_again == 'yes')
 
 end
 
