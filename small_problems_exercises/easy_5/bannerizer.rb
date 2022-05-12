@@ -132,7 +132,7 @@ end
 
 print_in_box('To boldly go where no one has gone before.')
 print_in_box('')
-print_in_box("Once upon a time there was a very long-winded sailor. He said: 'When I was younger, I took life by the horns and boy howdy it was great! Let me tell you the whole story, start to finish. Here goes...okay, so I was tinkering in my workshop, and an owl came to say hello to me so I grabbe that great-horned owl by the horns and gave it a big ol' kiss! How's that for carpe diem!'")
+print_in_box("Once upon a time there was a very long-winded sailor. He said: 'When I was younger, I took life by the horns and boy howdy it was great! Let me tell you the whole story, start to finish. Here goes...okay, so I was tinkering in my workshop, and an owl came to say hello to me so I grabbed that great-horned owl by the horns and gave it a big ol' kiss! How's that for carpe diem!'")
 
 # it works! I feel like I could refactor the code, the way I find the spacing is ugly looking but it works!
 # and maybe I could make it even more complex so that the message wraps smartly, keeping words together instead of cutting them into two when wrapping to the next line...

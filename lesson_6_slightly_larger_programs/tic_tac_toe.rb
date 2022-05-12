@@ -1,5 +1,6 @@
 require 'pry-byebug'
 
+# rubocop:disable Layout/LineLength
 =begin
 
 ### Problem:
@@ -34,10 +35,10 @@ Build a single player Tic Tac Toe game where a user can play against the compute
 
 display message asking if user wants to see instructions
   if yes, showing labeling system for squares 1-9
-    display board except with values of board hash filled in as 1-9 instead of blank spaces
+    display board except with values of board hash filled in as 1-9 (instead of blank spaces)
     display message explaining the rules
   if no... [another extra feature - player can choose 'X' or 'O'?]
-    start game loop    
+    start game loop
 
 initialize empty board
 display board
@@ -45,8 +46,7 @@ display board
 game loop [
   player turn loop
     get user input for move
-    loop until valid position is given
-      [subprocess: determine if a position is valid]
+    loop until valid position is given [subprocess: determine if a position is valid]
       diplay error if not valid
     use input to change board state (update board hash)
   display board
@@ -62,14 +62,14 @@ game loop [
       get user input for playing again?
       if no, exit game loop
       if yes, reset board, restart game loop
-    
+
   computer turn loop
     randomly select a position to fill
       if position is valid, change board state
         display board
         break loop
       if not valid, select a new position (continue loop)
-  
+
   check for winner again
   check for tie again
 ]
@@ -98,16 +98,19 @@ iterate through the WINNING_COMBINATIONS array
 return the value of the `victory` variable (true or false)
 
 ### NOTES ###
-# I adjusted a few things as I went along, in order to have the program run correctly with my added features, so it doesn't always line up with the algorithms above
-# some things have been adjusted to better go with the feel/attitude of the game,
-#   e.g. instead of looping for valid input the game may simply scold you and give you default values if you don't follow instructions
-# rather than static symbols for player and computer moves, it is customizable, even allowing single character choices outside of 'X' or 'O'
-# when I check for a victor, I'm just checking if the player won or if the computer won, depending on who just went
-# there is a skippable tutorial (output of instructions with the labeled board), but if you make an invalid choice later it will remind you how to play
-
+I adjusted a few things as I went along, in order to have the program run
+correctly with my added features, so it doesn't always line up with the algorithms above.
+Some things have been adjusted to better go with the feel/attitude of the game,
+e.g. instead of looping for valid input the game may simply scold you and give you default values if you don't follow instructions.
+Rather than static symbols for player and computer moves, it is customizable, even allowing single character choices outside of 'X' or 'O'.
+When I check for a victor, I'm just checking if the player won or if the computer won, depending on who just went.
+There is a skippable tutorial (output of instructions with the labeled board),
+but if you make an invalid choice later it will remind you how to play.
 
 =end
+# rubocop:enable Layout/LineLength
 
+# rubocop:disable Metrics/AbcSize
 def display_board(brd)
   puts ""
   puts "     |     |"
@@ -122,10 +125,11 @@ def display_board(brd)
   puts "  #{brd[7]}  |  #{brd[8]}  |  #{brd[9]}"
   puts "     |     |"
 end
+# rubocop:enable Metrics/AbcSize
 
 def initialize_board
   new_board = {}
-  (1..9).each {|num| new_board[num] = ' '}
+  (1..9).each { |num| new_board[num] = ' ' }
   new_board
 end
 
@@ -145,61 +149,39 @@ WINNING_COMBINATIONS = [
   [3, 5, 7]
 ]
 
-def player_won?(brd, player_mark) 
-  player_victory = false
-  current_board = []
-
-  brd.each_pair do |key, value|
-    if value == player_mark
-      current_board << key
-    end
-  end
-
+def determine_winner(brd, player_mark, computer_mark)
   WINNING_COMBINATIONS.each do |combo|
-    if combo.all? { |num| current_board.include?(num) }
-      player_victory = true
+    if combo.all? { |num| brd[num] == player_mark }
+      return 'player'
+    elsif combo.all? { |num| brd[num] == computer_mark }
+      return 'computer'
     end
   end
-
-  player_victory # returns true or false
+  nil # returns nil if neither player nor computer have won
 end
 
-def computer_won?(brd, computer_mark)
-  computer_victory = false
-  current_board = []
+def someone_won?(brd, player_mark, computer_mark)
+  !!determine_winner(brd, player_mark, computer_mark)
+end # returns a string or nil, `!!` changes to boolean
 
-  brd.each_pair do |key, value|
-    if value == computer_mark
-      current_board << key
-    end
-  end
-
-  WINNING_COMBINATIONS.each do |combo|
-    if combo.all? { |num| current_board.include?(num) }
-      computer_victory = true
-    end
-  end
-
-  computer_victory # returns true or false
+def full_board?(brd) # if board is full, this should return true.
+  !brd.values.include?(' ') # returns false if any blank spaces on board
 end
 
-def full_board?(brd) # if board is full, this should return true. this doubles as a check for a tie because I'm calling this method after checking for a victor
-  !brd.values.include?(' ') # returns false if there are any blank spaces on the board
-end
-
-def valid_move?(brd, move) # should return true as long as the position is blank (and therefore a valid choice)
-  brd[move] == ' '
+def valid_move?(brd, move) # should return true
+  brd[move] == ' ' # as long as the position is blank (choice is valid)
 end
 
 def show_tutorial_board
   tutorial_board = {}
-  (1..9).each {|num| tutorial_board[num] = "#{num}" }
+  (1..9).each { |num| tutorial_board[num] = num.to_s }
   display_board(tutorial_board)
 end
 
 ### Meat of program (user input, game, etc.) is below this point, using the set-up and methods defined above
 
-puts 'Welcome to Tic Tac Toe! You are about to face a fearsome computer opponent!'
+puts 'Welcome to Tic Tac Toe!'
+puts 'You are about to face a fearsome computer opponent!'
 
 puts 'Would you like to see some instructions for how to play? y/n'
 input = gets.chomp.downcase
@@ -235,52 +217,50 @@ else
   computer_mark = 'O'
 end
 
-
 puts 'Alright! Now just hit enter to get started.'
 gets
 
 loop do # main program loop
-
   system 'clear'
   board = initialize_board
   display_board(board)
 
   loop do # single game loop
-
     loop do # player turn loop
       puts 'Your move:'
-      user_move = gets.chomp.to_i # using integers for the board hash keys so I need to convert it when I get it
+      user_move = gets.chomp.to_i # to match the board hash keys (integers)
       if valid_move?(board, user_move)
-        board[user_move] = player_mark # place player's mark on the board according to the selected square
+        board[user_move] = player_mark # place player's mark on the board
         display_board(board)
         break
       else
         show_tutorial_board
-        puts '^^^ As a reminder, here is the ordering for the squares. Enter a number to take your turn.'
+        puts '^^^ As a reminder, here is the ordering for the squares.'
+        puts 'Enter a number to take your turn.'
         display_board(board)
       end
     end
 
-    break if player_won?(board, player_mark) || full_board?(board)
+    break if someone_won?(board, player_mark, computer_mark) || full_board?(board)
 
     loop do # computer turn loop
       computer_move = (1..9).to_a.sample # random position between 1 and 9
       if valid_move?(board, computer_move)
-        puts 'My supercomputer will surely outsmart you! Take your turn my pretty!'
+        puts "My supercomputer will surely outsmart you! Just watch!"
         board[computer_move] = computer_mark
         display_board(board)
         break
       end
     end
 
-    break if computer_won?(board, computer_mark) || full_board?(board)
-
+    break if someone_won?(board, player_mark, computer_mark) || full_board?(board)
   end
 
-  if player_won?(board, player_mark)
+  case determine_winner(board, player_mark, computer_mark)
+  when 'player'
     puts "It's not possible! How could my magnificent creation lose!?"
     puts 'I want a rematch! Do you accept? y/n'
-  elsif computer_won?(board, computer_mark)
+  when 'computer'
     puts "Ha! I knew you couldn't defeat my supercomputer!"
     puts 'Would you like to give it another shot, you loser? y/n'
   else
@@ -290,7 +270,6 @@ loop do # main program loop
 
   play_again = gets.chomp.downcase
   break unless (play_again == 'y') || (play_again == 'yes')
-
 end
 
 puts "I'll admit it. I had fun. I hope you did too :) Thanks for playing!"
