@@ -201,6 +201,17 @@ create method find_at_risk_square
 =end
 # rubocop:enable Layout/LineLength
 
+WINNING_COMBINATIONS = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+  [1, 4, 7],
+  [2, 5, 8],
+  [3, 6, 9],
+  [1, 5, 9],
+  [3, 5, 7]
+]
+
 # rubocop:disable Metrics/AbcSize
 def display_board(brd)
   puts ""
@@ -223,22 +234,6 @@ def initialize_board
   (1..9).each { |num| new_board[num] = ' ' }
   new_board
 end
-
-# This first section (above) was from the walkthrough.
-# Now that I have a board and a way to view/change its status, I can
-# proceed with my own ideas of how to build the game before watching
-# further through the walk through, I think.
-
-WINNING_COMBINATIONS = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9],
-  [1, 4, 7],
-  [2, 5, 8],
-  [3, 6, 9],
-  [1, 5, 9],
-  [3, 5, 7]
-]
 
 def prompt(string)
   puts "=> #{string}"
@@ -278,8 +273,8 @@ def joinor(array, separator_string = ', ', final_separator = 'or')
 end
 
 def list_valid_moves(brd)
-  moves = brd.keys.select { |key| brd[key] == ' ' }
-  joinor(moves)
+  valid_moves = brd.keys.select { |key| brd[key] == ' ' }
+  joinor(valid_moves)
 end
 
 def show_tutorial_board
@@ -302,32 +297,45 @@ def give_instructions
   prompt 'But first, we have a couple more settings to adjust.'
 end
 
-def immediate_risk?(brd, player_mark, comp_mark)
-  WINNING_COMBINATIONS.each do |line|
-    player_squares = line.count { |square| brd[square] == player_mark }
-    computer_squares = line.count { |square| brd[square] == comp_mark }
-    if player_squares == 2 && computer_squares == 0
-      return true
-    end
-  end
-  false
-end
-
-def find_at_risk_square(brd, player_mark, comp_mark)
-  line_threatened = []
+# rubocop:disable Metrics/CyclomaticComplexity
+# I'm not sure there's a way to make this less complex, given the task...
+# It's down to 8/7 when detected, so it doesn't seem too bad.
+def find_final_square(brd, player_mark, comp_mark, mode)
+  final_square = nil
 
   WINNING_COMBINATIONS.each do |line|
-    player_squares = line.count { |square| brd[square] == player_mark }
-    computer_squares = line.count { |square| brd[square] == comp_mark }
-    if player_squares == 2 && computer_squares == 0
-      line_threatened = line
+    player_squares = brd.values_at(*line).count(player_mark)
+    computer_squares = brd.values_at(*line).count(comp_mark)
+    squares_filled = player_squares + computer_squares
+    next unless squares_filled == 2
+
+    if (player_squares == 2 && mode == 'defense') ||
+       (computer_squares == 2 && mode == 'offense')
+      final_square = line.select { |square| brd[square] == ' ' }.first
     end
   end
 
-  line_threatened.select { |square| brd[square] == ' ' }.first
+  final_square # returns nil or brd key (int) for computer defense or attack
+end
+# rubocop:enable Metrics/CyclomaticComplexity
+
+def computer_moves(brd, player_mark, comp_mark, difficulty, valid_moves)
+  case difficulty
+  when 'easy'
+    comp_move = valid_moves.sample
+  when 'normal'
+    comp_move = find_final_square(brd, player_mark, comp_mark, 'defense') ||
+                valid_moves.sample
+  when 'hard'
+    comp_move = find_final_square(brd, player_mark, comp_mark, 'offense') ||
+                find_final_square(brd, player_mark, comp_mark, 'defense') ||
+                valid_moves.sample
+  end
+
+  brd[comp_move] = comp_mark
 end
 
-### Meat of program (user input, game, etc.) is below this point
+### Meat of program (user input, game, etc.) is below this point ###
 
 prompt 'Welcome to Tic Tac Toe!'
 prompt 'You are about to face a fearsome computer opponent!'
@@ -376,8 +384,8 @@ loop do
     prompt 'Fair enough. The standard settings, then.'
     break
   when 'hard'
-    prompt "Woah woah woah! I haven't quite perfected my machine yet, sorry. I'll do what I can to challenge you at the normal setting." # this line is a placeholder for when I upgrade the AI again
-    difficulty = 'normal' # make sure to change this to 'hard' once I have an appropriate AI for it
+    prompt "Not to 50! Just kidding, I'm happy to crush you."
+    difficulty = 'hard'
     break
   else
     prompt "That's not really an option. Let's try again."
@@ -410,6 +418,7 @@ loop do # main program loop
       prompt "Choose a square: #{list_valid_moves(board)}"
       user_turn_input = gets.chomp
       user_move = user_turn_input.to_i
+
       if valid_move?(board, user_move) # to match the board hash keys
         board[user_move] = player_mark # place player's mark on the board
         display_board(board)
@@ -426,24 +435,11 @@ loop do # main program loop
 
     break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
 
-    loop do # computer turn loop
-      if difficulty == 'easy'
-        comp_move = (1..9).to_a.sample # random position between 1 and 9
-      elsif difficulty == 'normal'
-        if immediate_risk?(board, player_mark, comp_mark)
-          comp_move = find_at_risk_square(board, player_mark, comp_mark)
-        else
-          comp_move = (1..9).to_a.sample
-        end
-      end
-
-      if valid_move?(board, comp_move)
-        prompt "My supercomputer will surely outsmart you! Just watch!"
-        board[comp_move] = comp_mark
-        display_board(board)
-        break
-      end
-    end
+    # Computer turn code block
+    prompt "My supercomputer will surely outsmart you! Just watch!"
+    valid_moves = board.keys.select { |key| board[key] == ' ' }
+    computer_moves(board, player_mark, comp_mark, difficulty, valid_moves)
+    display_board(board)
 
     break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
   end
@@ -460,6 +456,7 @@ loop do # main program loop
   end
 
   break if (player_wins >= match_wins) || (comp_wins >= match_wins)
+
   prompt "Time for another round. I'll show no mercy!"
   prompt "Hit enter when you're ready for your beating."
 end
