@@ -367,17 +367,17 @@ difficulty = ''
 loop do
   prompt "Choose your difficulty: easy, normal, or hard"
   difficulty = gets.chomp.downcase
-  
+
   case difficulty
   when 'easy'
     prompt 'Not much for thinking, eh? Easy it is!'
     break
   when 'normal'
-    prompt 'Fair enough. That standard settings, then.'
+    prompt 'Fair enough. The standard settings, then.'
     break
   when 'hard'
-    prompt "Woah woah woah! I haven't quite perfected my machine yet, sorry. I'll do what I can to challenge you at the normal setting."
-    difficulty = 'normal'
+    prompt "Woah woah woah! I haven't quite perfected my machine yet, sorry. I'll do what I can to challenge you at the normal setting." # this line is a placeholder for when I upgrade the AI again
+    difficulty = 'normal' # make sure to change this to 'hard' once I have an appropriate AI for it
     break
   else
     prompt "That's not really an option. Let's try again."
@@ -428,7 +428,7 @@ loop do # main program loop
 
     loop do # computer turn loop
       if difficulty == 'easy'
-        comp_move = (1..9).to_a.sample # random position between 1 and 9        
+        comp_move = (1..9).to_a.sample # random position between 1 and 9
       elsif difficulty == 'normal'
         if immediate_risk?(board, player_mark, comp_mark)
           comp_move = find_at_risk_square(board, player_mark, comp_mark)
