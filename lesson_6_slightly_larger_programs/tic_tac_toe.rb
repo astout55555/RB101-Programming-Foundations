@@ -146,6 +146,58 @@ create a method named joinor(1st arg, 2nd arg, 3rd arg)
 
 ## Second ask: Keep Score ##
 
+For this addition, I need to both keep track of how many times the player and the computer have each won, and terminate the game once someone wins 5 times.
+I'm not allowed to use global or instance variables, which is fine because I don't really know how to use those yet (I've been working with local variables).
+
+Algorithm:
+
+create variables for player and computer wins, before the main loop
+in the case statement that determines what happens when a winner is detected, add code incrementing the appropriate variable
+in the 'play again?' code block, instead of seeking user input, use a `break if` statement to end the loop once someone reaches the needed number of wins
+
+in the settings section of the program, seek user input and allow the player to choose the number of games needed to win
+  store in a `match_wins` variable
+  default to 5 if user gives input which is not a positive integer
+
+make a display_score method, which can be used to show how many wins the player and computer each have, and the total number needed to win
+  simply print interpolated statements with the total wins for the player and the computer, and the total needed to win the match
+
+in the tutorial, explain that the player can ask for the score any time during the game
+
+on the player's turn, have the game respond if the player wants to know the score
+  if the user input is the word 'score' or 'score?', then run the `display_score` method
+  then continue the loop so they can take their turn still
+
+after the main program loop, give flavor to the final ending messages based on who won with an if/else statement
+
+## Third ask: Computer AI: Defense ##
+
+For this addition, I need to have the program recognize when the player has two marks in a row, then have the computer take the remaining spot.
+
+Algorithm:
+
+On computer turn, first check if there is an immediate risk
+  if so, find the at risk square and move there.
+  otherwise make a random move like before
+
+subprocess: finding an immediate risk
+  find out if there is a line with 2 player marks and 0 computer marks
+
+create method immediate_risk?
+  iterate through the WINNING_COMBINATIONS constant (array of subarrays of each winning line)
+    for each line, count the number of squares which match the player's mark
+      if there are 2, count the number of squares which match the computer's mark
+        if 0, then return true (a risk is found)
+  if no risk is found, return false
+
+create method find_at_risk_square
+  create line_threatened variable, initialized as empty array
+  iterate through the WINNING_COMBINATIONS constant (array of subarrays of each winning line)
+    for each line, count the number of squares which match the player's mark
+      if there are 2, reassign the line_threatened variable to this sub-array # if there is more than one line at risk, that's okay, it will just be reassigned again to the second valid line
+  select the square number which does not match the player marker
+  return the element (not an array with it inside) by chaining something like #first to it
+
 =end
 # rubocop:enable Layout/LineLength
 
@@ -187,6 +239,10 @@ WINNING_COMBINATIONS = [
   [1, 5, 9],
   [3, 5, 7]
 ]
+
+def prompt(string)
+  puts "=> #{string}"
+end
 
 def determine_winner(brd, player_mark, comp_mark)
   WINNING_COMBINATIONS.each do |combo|
@@ -232,28 +288,64 @@ def show_tutorial_board
   display_board(tutorial_board)
 end
 
+def display_scoreboard(player_wins, comp_wins, match_wins)
+  prompt "SCOREBOARD"
+  prompt "Player has won #{player_wins} games."
+  prompt "Computer has won #{comp_wins} games."
+  prompt "Total games needed to win match: #{match_wins}"
+end
+
+def give_instructions
+  prompt "It's regular Tic Tac Toe rules, except the squares are ordered."
+  prompt 'When prompted, simply enter a number (1-9) to pick your square.'
+  prompt "If you need to see the scoreboard, just type 'score' on your turn."
+  prompt 'But first, we have a couple more settings to adjust.'
+end
+
+def immediate_risk?(brd, player_mark, comp_mark)
+  WINNING_COMBINATIONS.each do |line|
+    player_squares = line.count { |square| brd[square] == player_mark }
+    computer_squares = line.count { |square| brd[square] == comp_mark }
+    if player_squares == 2 && computer_squares == 0
+      return true
+    end
+  end
+  false
+end
+
+def find_at_risk_square(brd, player_mark, comp_mark)
+  line_threatened = []
+
+  WINNING_COMBINATIONS.each do |line|
+    player_squares = line.count { |square| brd[square] == player_mark }
+    computer_squares = line.count { |square| brd[square] == comp_mark }
+    if player_squares == 2 && computer_squares == 0
+      line_threatened = line
+    end
+  end
+
+  line_threatened.select { |square| brd[square] == ' ' }.first
+end
+
 ### Meat of program (user input, game, etc.) is below this point
 
-puts 'Welcome to Tic Tac Toe!'
-puts 'You are about to face a fearsome computer opponent!'
+prompt 'Welcome to Tic Tac Toe!'
+prompt 'You are about to face a fearsome computer opponent!'
 
-puts 'Would you like to see some instructions for how to play? y/n'
+prompt 'Would you like to see some instructions for how to play? y/n'
 input = gets.chomp.downcase
 if (input == 'y') || (input == 'yes')
   show_tutorial_board
-  puts "It's regular Tic Tac Toe rules, except the squares are ordered."
-  puts 'When prompted, simply enter a number (1-9) to pick your square.'
+  give_instructions
 elsif (input == 'n') || (input == 'no')
-  puts 'An old pro, eh?'
+  prompt 'An old pro, eh?'
 else
-  puts "You seem easily confused. I'll just show you how to play."
+  prompt "You seem easily confused. I'll just show you how to play."
   show_tutorial_board
-  puts "It's regular Tic Tac Toe rules, except the squares are ordered."
-  puts 'When prompted, simply enter a number (1-9) to pick your square.'
+  give_instructions
 end
 
-puts "Okay, would you like to play as X's or O's?"
-
+prompt "Okay, would you like to play as X's or O's?"
 marking_choice = gets.chomp.upcase
 if marking_choice == 'X'
   player_mark = 'X'
@@ -262,35 +354,72 @@ elsif (marking_choice == 'O') || (marking_choice == '0')
   player_mark = 'O'
   comp_mark = 'X'
 elsif (marking_choice.length == 1) && (marking_choice != ' ')
-  puts "That's an...interesting choice. Sure, let's go with that."
+  prompt "That's an...interesting choice. Sure, let's go with that."
   player_mark = marking_choice
   comp_mark = 'O'
 else
-  puts "Funny. Why don't we just make you X's and we'll move on."
+  prompt "Funny. Why don't we just make you X's and we'll move on."
   player_mark = 'X'
   comp_mark = 'O'
 end
 
-puts 'Alright! Now just hit enter to get started.'
-gets
+difficulty = ''
+loop do
+  prompt "Choose your difficulty: easy, normal, or hard"
+  difficulty = gets.chomp.downcase
+  
+  case difficulty
+  when 'easy'
+    prompt 'Not much for thinking, eh? Easy it is!'
+    break
+  when 'normal'
+    prompt 'Fair enough. That standard settings, then.'
+    break
+  when 'hard'
+    prompt "Woah woah woah! I haven't quite perfected my machine yet, sorry. I'll do what I can to challenge you at the normal setting."
+    difficulty = 'normal'
+    break
+  else
+    prompt "That's not really an option. Let's try again."
+  end
+end
+
+prompt "And how many games should you have to win to win the whole match?"
+wins_input = gets.chomp.to_i
+if wins_input > 0
+  match_wins = wins_input
+else
+  prompt "Not sure what to make of what you just said. So let's just say 5."
+  match_wins = 5
+end
+
+prompt 'Alright! Now just hit enter to get started.'
+
+player_wins = 0
+comp_wins = 0
 
 loop do # main program loop
+  gets
   system 'clear'
+  display_scoreboard(player_wins, comp_wins, match_wins)
   board = initialize_board
   display_board(board)
 
   loop do # single game loop
     loop do # player turn loop
-      puts "Choose a square: #{list_valid_moves(board)}"
-      user_move = gets.chomp.to_i # to match the board hash keys (integers)
-      if valid_move?(board, user_move)
+      prompt "Choose a square: #{list_valid_moves(board)}"
+      user_turn_input = gets.chomp
+      user_move = user_turn_input.to_i
+      if valid_move?(board, user_move) # to match the board hash keys
         board[user_move] = player_mark # place player's mark on the board
         display_board(board)
         break
+      elsif user_turn_input.downcase.start_with?('s') # 'score' or 'scoreboard'
+        display_scoreboard(player_wins, comp_wins, match_wins)
       else
         show_tutorial_board
-        puts '^^^ As a reminder, here is the ordering for the squares.'
-        puts 'Enter a number to take your turn.'
+        prompt '^^^ As a reminder, here is the ordering for the squares.'
+        prompt 'Enter a number to take your turn.'
         display_board(board)
       end
     end
@@ -298,10 +427,19 @@ loop do # main program loop
     break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
 
     loop do # computer turn loop
-      computer_move = (1..9).to_a.sample # random position between 1 and 9
-      if valid_move?(board, computer_move)
-        puts "My supercomputer will surely outsmart you! Just watch!"
-        board[computer_move] = comp_mark
+      if difficulty == 'easy'
+        comp_move = (1..9).to_a.sample # random position between 1 and 9        
+      elsif difficulty == 'normal'
+        if immediate_risk?(board, player_mark, comp_mark)
+          comp_move = find_at_risk_square(board, player_mark, comp_mark)
+        else
+          comp_move = (1..9).to_a.sample
+        end
+      end
+
+      if valid_move?(board, comp_move)
+        prompt "My supercomputer will surely outsmart you! Just watch!"
+        board[comp_move] = comp_mark
         display_board(board)
         break
       end
@@ -312,18 +450,22 @@ loop do # main program loop
 
   case determine_winner(board, player_mark, comp_mark)
   when 'player'
-    puts "It's not possible! How could my magnificent creation lose!?"
-    puts 'I want a rematch! Do you accept? y/n'
+    prompt "It's not possible! How could my magnificent creation lose!?"
+    player_wins += 1
   when 'computer'
-    puts "Ha! I knew you couldn't defeat my supercomputer!"
-    puts 'Would you like to give it another shot, you loser? y/n'
+    prompt "Ha! I knew you couldn't defeat my supercomputer!"
+    comp_wins += 1
   else
-    puts "Looks like this game is a tie. That's a bit unsatisfying, huh?"
-    puts 'Would you like to play again? y/n'
+    prompt "Looks like this game is a tie. That's a bit unsatisfying, huh?"
   end
 
-  play_again = gets.chomp.downcase
-  break unless (play_again == 'y') || (play_again == 'yes')
+  break if (player_wins >= match_wins) || (comp_wins >= match_wins)
+  prompt "Time for another round. I'll show no mercy!"
+  prompt "Hit enter when you're ready for your beating."
 end
 
-puts "I'll admit it. I had fun. I hope you did too :) Thanks for playing!"
+if player_wins > comp_wins
+  prompt "Inferior...being..."
+else
+  prompt "You know, I had fun. I hope you did too. Thanks for playing, cutie!"
+end
