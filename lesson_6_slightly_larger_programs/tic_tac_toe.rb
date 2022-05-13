@@ -98,14 +98,53 @@ iterate through the WINNING_COMBINATIONS array
 return the value of the `victory` variable (true or false)
 
 ### NOTES ###
-I adjusted a few things as I went along, in order to have the program run
-correctly with my added features, so it doesn't always line up with the algorithms above.
+I adjusted a few things as I went along, in order to have the program run correctly with my added features, so it doesn't always line up with the algorithms above.
 Some things have been adjusted to better go with the feel/attitude of the game,
 e.g. instead of looping for valid input the game may simply scold you and give you default values if you don't follow instructions.
 Rather than static symbols for player and computer moves, it is customizable, even allowing single character choices outside of 'X' or 'O'.
 When I check for a victor, I'm just checking if the player won or if the computer won, depending on who just went.
-There is a skippable tutorial (output of instructions with the labeled board),
-but if you make an invalid choice later it will remind you how to play.
+There is a skippable tutorial (output of instructions with the labeled board), but if you make an invalid choice later it will remind you how to play.
+
+### Additional Features ###
+
+Since I built the game a bit differently to begin with, I now need to do a bit of groundwork before I can tackle some of these.
+
+## First ask: Improved "join" ##
+
+Starting point: the walkthrough version of the game uses a prompt that shows available moves when it is the players turn, like so:
+
+=> Choose a position to place a piece: 1, 2, 3, 4, 5, 6, 7, 8, 9
+
+And the additional feature request is to improve it to read more naturally, like so:
+
+=> Choose a position to place a piece: 1, 2, 3, 4, 5, 6, 7, 8, or 9
+
+I need to create a "joinor" method which produces results like these examples:
+
+joinor([1, 2])                   # => "1 or 2"
+joinor([1, 2, 3])                # => "1, 2, or 3"
+joinor([1, 2, 3], '; ')          # => "1; 2; or 3"
+joinor([1, 2, 3], ', ', 'and')   # => "1, 2, and 3"
+
+First step is to build the regular prompt, showing the available spaces. To do that, I need to have a way of determining open spaces.
+(Valid choices / open spaces should be board hash values of ' ')
+
+Algorithm:
+
+create a method named list_valid_moves
+  select from the board hash all keys with a value of ' '
+  return an array of those keys (integers), save to variable
+  call join(', ') on this variable (or pass variable into #joinor as an argument once that is set up)
+
+create a method named joinor(1st arg, 2nd arg, 3rd arg)
+  if array still has 2 or more elements
+    remove final element from the passed array and store it as a separate variable
+    join using 2nd arg as separator, store as variable
+    for the final line / return value, use string interpolation:
+      add the mostly joined array string and the final element together, separated by the value of the 3rd argument and proper spacing
+  otherwise, simply join the array using the 3rd arg an proper spacing (string interpolation) as the argument
+
+## Second ask: Keep Score ##
 
 =end
 # rubocop:enable Layout/LineLength
@@ -149,19 +188,19 @@ WINNING_COMBINATIONS = [
   [3, 5, 7]
 ]
 
-def determine_winner(brd, player_mark, computer_mark)
+def determine_winner(brd, player_mark, comp_mark)
   WINNING_COMBINATIONS.each do |combo|
     if combo.all? { |num| brd[num] == player_mark }
       return 'player'
-    elsif combo.all? { |num| brd[num] == computer_mark }
+    elsif combo.all? { |num| brd[num] == comp_mark }
       return 'computer'
     end
   end
   nil # returns nil if neither player nor computer have won
 end
 
-def someone_won?(brd, player_mark, computer_mark)
-  !!determine_winner(brd, player_mark, computer_mark)
+def someone_won?(brd, player_mark, comp_mark)
+  !!determine_winner(brd, player_mark, comp_mark)
 end # returns a string or nil, `!!` changes to boolean
 
 def full_board?(brd) # if board is full, this should return true.
@@ -172,13 +211,28 @@ def valid_move?(brd, move) # should return true
   brd[move] == ' ' # as long as the position is blank (choice is valid)
 end
 
+def joinor(array, separator_string = ', ', final_separator = 'or')
+  if array.size > 2
+    final_element = array.pop
+    mostly_joined = array.join(separator_string)
+    "#{mostly_joined}#{separator_string}#{final_separator} #{final_element}"
+  else
+    array.join(" #{final_separator} ")
+  end
+end
+
+def list_valid_moves(brd)
+  moves = brd.keys.select { |key| brd[key] == ' ' }
+  joinor(moves)
+end
+
 def show_tutorial_board
   tutorial_board = {}
   (1..9).each { |num| tutorial_board[num] = num.to_s }
   display_board(tutorial_board)
 end
 
-### Meat of program (user input, game, etc.) is below this point, using the set-up and methods defined above
+### Meat of program (user input, game, etc.) is below this point
 
 puts 'Welcome to Tic Tac Toe!'
 puts 'You are about to face a fearsome computer opponent!'
@@ -187,15 +241,15 @@ puts 'Would you like to see some instructions for how to play? y/n'
 input = gets.chomp.downcase
 if (input == 'y') || (input == 'yes')
   show_tutorial_board
-  puts "It's regular Tic Tac Toe rules, except you will choose a square based on this ordering."
-  puts 'When prompted, simply enter a number (1-9) to pick your square and take your turn.'
+  puts "It's regular Tic Tac Toe rules, except the squares are ordered."
+  puts 'When prompted, simply enter a number (1-9) to pick your square.'
 elsif (input == 'n') || (input == 'no')
   puts 'An old pro, eh?'
 else
   puts "You seem easily confused. I'll just show you how to play."
   show_tutorial_board
-  puts "It's regular Tic Tac Toe rules, except you will choose a square based on this ordering."
-  puts 'When prompted, simply enter a number (1-9) to pick your square and take your turn.'
+  puts "It's regular Tic Tac Toe rules, except the squares are ordered."
+  puts 'When prompted, simply enter a number (1-9) to pick your square.'
 end
 
 puts "Okay, would you like to play as X's or O's?"
@@ -203,18 +257,18 @@ puts "Okay, would you like to play as X's or O's?"
 marking_choice = gets.chomp.upcase
 if marking_choice == 'X'
   player_mark = 'X'
-  computer_mark = 'O'
+  comp_mark = 'O'
 elsif (marking_choice == 'O') || (marking_choice == '0')
   player_mark = 'O'
-  computer_mark = 'X'
+  comp_mark = 'X'
 elsif (marking_choice.length == 1) && (marking_choice != ' ')
   puts "That's an...interesting choice. Sure, let's go with that."
   player_mark = marking_choice
-  computer_mark = 'O'
+  comp_mark = 'O'
 else
   puts "Funny. Why don't we just make you X's and we'll move on."
   player_mark = 'X'
-  computer_mark = 'O'
+  comp_mark = 'O'
 end
 
 puts 'Alright! Now just hit enter to get started.'
@@ -227,7 +281,7 @@ loop do # main program loop
 
   loop do # single game loop
     loop do # player turn loop
-      puts 'Your move:'
+      puts "Choose a square: #{list_valid_moves(board)}"
       user_move = gets.chomp.to_i # to match the board hash keys (integers)
       if valid_move?(board, user_move)
         board[user_move] = player_mark # place player's mark on the board
@@ -241,22 +295,22 @@ loop do # main program loop
       end
     end
 
-    break if someone_won?(board, player_mark, computer_mark) || full_board?(board)
+    break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
 
     loop do # computer turn loop
       computer_move = (1..9).to_a.sample # random position between 1 and 9
       if valid_move?(board, computer_move)
         puts "My supercomputer will surely outsmart you! Just watch!"
-        board[computer_move] = computer_mark
+        board[computer_move] = comp_mark
         display_board(board)
         break
       end
     end
 
-    break if someone_won?(board, player_mark, computer_mark) || full_board?(board)
+    break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
   end
 
-  case determine_winner(board, player_mark, computer_mark)
+  case determine_winner(board, player_mark, comp_mark)
   when 'player'
     puts "It's not possible! How could my magnificent creation lose!?"
     puts 'I want a rematch! Do you accept? y/n'
