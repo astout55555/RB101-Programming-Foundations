@@ -212,6 +212,13 @@ WINNING_COMBINATIONS = [
   [3, 5, 7]
 ]
 
+DIFFICULTY_RATINGS = {
+  'easy' => 1,
+  'normal' => 2,
+  'hard' => 3,
+  'demonic' => 4
+}
+
 # rubocop:disable Metrics/AbcSize
 def display_board(brd)
   puts ""
@@ -298,13 +305,16 @@ def give_instructions
 end
 
 # rubocop:disable Metrics/CyclomaticComplexity
-# I'm not sure there's a way to make this less complex, given the task...
-# It's down to 8/7 when detected, so it doesn't seem too bad.
-def find_final_square(brd, player_mark, comp_mark, mode)
+# I'm not sure there's a way to make these two less complex,
+# given the tasks they handle. Not without breaking computer_moves
+# into a bunch of smaller methods based on the difficulty level, or
+# find_final_sqaure into two separate methods (1 for each mode).
+# They're each down to 8/7 when detected, so it doesn't seem too bad.
+def find_final_square(brd, play_mark, comp_mark, mode)
   final_square = nil
 
   WINNING_COMBINATIONS.each do |line|
-    player_squares = brd.values_at(*line).count(player_mark)
+    player_squares = brd.values_at(*line).count(play_mark)
     computer_squares = brd.values_at(*line).count(comp_mark)
     squares_filled = player_squares + computer_squares
     next unless squares_filled == 2
@@ -317,23 +327,30 @@ def find_final_square(brd, player_mark, comp_mark, mode)
 
   final_square # returns nil or brd key (int) for computer defense or attack
 end
-# rubocop:enable Metrics/CyclomaticComplexity
 
-def computer_moves(brd, player_mark, comp_mark, difficulty, valid_moves)
-  case difficulty
-  when 'easy'
-    comp_move = valid_moves.sample
-  when 'normal'
-    comp_move = find_final_square(brd, player_mark, comp_mark, 'defense') ||
-                valid_moves.sample
-  when 'hard'
-    comp_move = find_final_square(brd, player_mark, comp_mark, 'offense') ||
-                find_final_square(brd, player_mark, comp_mark, 'defense') ||
-                valid_moves.sample
+# this one is also 8/7 for the PerceivedComplexity offense, which seems okay
+# rubocop:disable Metrics/PerceivedComplexity
+def computer_moves(brd, play_mark, comp_mark, level, valid_moves)
+  move = nil
+
+  loop do
+    move = find_final_square(brd, play_mark, comp_mark, 'offense') if level > 3
+    break unless move.nil?
+
+    move = find_final_square(brd, play_mark, comp_mark, 'defense') if level > 2
+    break unless move.nil?
+
+    move = (5 if brd[5] == ' ') if level > 1
+    break unless move.nil?
+
+    move = valid_moves.sample
+    break
   end
 
-  brd[comp_move] = comp_mark
+  brd[move] = comp_mark
 end
+# rubocop:enable Metrics/PerceivedComplexity
+# rubocop:enable Metrics/CyclomaticComplexity
 
 ### Meat of program (user input, game, etc.) is below this point ###
 
@@ -371,21 +388,24 @@ else
   comp_mark = 'O'
 end
 
-difficulty = ''
+level = 0
 loop do
-  prompt "Choose your difficulty: easy, normal, or hard"
+  prompt "Choose your difficulty: easy, normal, hard, or demonic"
   difficulty = gets.chomp.downcase
+  level = DIFFICULTY_RATINGS[difficulty]
 
-  case difficulty
-  when 'easy'
+  case level
+  when 1
     prompt 'Not much for thinking, eh? Easy it is!'
     break
-  when 'normal'
+  when 2
     prompt 'Fair enough. The standard settings, then.'
     break
-  when 'hard'
-    prompt "Not to 50! Just kidding, I'm happy to crush you."
-    difficulty = 'hard'
+  when 3
+    prompt "As you wish. Your doom is nigh!"
+    break
+  when 4
+    prompt "NOT TO FIFTY! Just kidding, I'd be happy to crush you!"
     break
   else
     prompt "That's not really an option. Let's try again."
@@ -397,8 +417,8 @@ wins_input = gets.chomp.to_i
 if wins_input > 0
   match_wins = wins_input
 else
-  prompt "Not sure what to make of what you just said. So let's just say 5."
-  match_wins = 5
+  prompt "Not sure what to make of what you just said. So let's just say 3."
+  match_wins = 3
 end
 
 prompt 'Alright! Now just hit enter to get started.'
@@ -438,7 +458,7 @@ loop do # main program loop
     # Computer turn code block
     prompt "My supercomputer will surely outsmart you! Just watch!"
     valid_moves = board.keys.select { |key| board[key] == ' ' }
-    computer_moves(board, player_mark, comp_mark, difficulty, valid_moves)
+    computer_moves(board, player_mark, comp_mark, level, valid_moves)
     display_board(board)
 
     break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
