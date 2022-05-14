@@ -198,6 +198,42 @@ create method find_at_risk_square
   select the square number which does not match the player marker
   return the element (not an array with it inside) by chaining something like #first to it
 
+## 4th ask: Computer AI: Offense ##
+## 5th ask (A and B): Computer turn refinements ##
+
+I did these steps without working out the algorithm, because it seemed straightforward. I was probably too impatient.
+Because I had to increase the number of difficulty settings and rearrange the order of preferred moves, plus adjust setting configuration text etc.,
+I ended up spending a lot of time refactoring the code to make it work with minimal rubocop complaints.
+I think I found 2 other solutions before settling on the one that is still in the code. They worked,
+but rubocop doesn't like complex conditional statements. At least I got a lot of experience interpreting/addressing rubocop's complaints.
+
+What I did was use a hash constant, `DIFFICULTY_RATINGS`, to give a numeric value to the chosen difficulty.
+This allowed me to trigger the same line of code for multiple difficulties, still in the order of preference,
+by placing the smarter moves first but behind conditionals that required a minimum level of difficulty.
+I'm not sure if there's some way to do this without repeated `break if` statements within a while loop,
+since I need to avoid the move choice being overwritten by lower priorities, considering I only want to go through it one time at most,
+and I'm not really using the loop other than the fact that having my code inside it allows me to use the `break` command.
+
+## 5th ask (C and D): Computer turn refinements ##
+## 6th ask: Improve the game loop ##
+
+I'm grouping these two (3?) together because the solution appears to be related to all 3 at once,
+although I will likely solve 5C and 6 together, and then go back and solve 5D.
+This is because the easiest way to solve 5C (allow the player to choose who goes first) will be to turn the game loop code into something more general,
+as requested by #6, which wants me to use some code it provides and fill in the gaps (define the methods it uses to denote subprocesses I should solve).
+
+The code (for #6):
+
+loop do
+  display_board(board)
+  place_piece!(board, current_player)
+  current_player = alternate_player(current_player)
+  break if someone_won?(board) || board_full?(board)
+end
+
+The main thing it wants is for me to not have to repeat the line with the break conditions.
+It is asking me to define the #place_piece! and #alternate_player methods, such that whoever is first goes and then it alternates who is up.
+
 =end
 # rubocop:enable Layout/LineLength
 
@@ -333,7 +369,7 @@ end
 def computer_moves(brd, play_mark, comp_mark, level, valid_moves)
   move = nil
 
-  loop do
+  while move.nil?
     move = find_final_square(brd, play_mark, comp_mark, 'offense') if level > 3
     break unless move.nil?
 
@@ -344,7 +380,6 @@ def computer_moves(brd, play_mark, comp_mark, level, valid_moves)
     break unless move.nil?
 
     move = valid_moves.sample
-    break
   end
 
   brd[move] = comp_mark
