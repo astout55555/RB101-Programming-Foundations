@@ -234,6 +234,78 @@ end
 The main thing it wants is for me to not have to repeat the line with the break conditions.
 It is asking me to define the #place_piece! and #alternate_player methods, such that whoever is first goes and then it alternates who is up.
 
+This is how the code would look now if I had limited my code to the walkthrough example:
+
+loop do
+  display_board(board)
+
+  player_places_piece!(board)
+  break if someone_won?(board) || board_full?(board)
+
+  computer_places_piece!(board)
+  break if someone_won?(board) || board_full?(board)
+end
+
+Of course mine is already more complicated than this, and doesn't lend itself well to a single method for both turns.
+In addition to the board, I need to pass in arguments for the player and computer markers, the numeric difficulty level, and the array of remaining valid moves whenever I try to have the computer take a turn,
+which means any method which is meant to execute either turn would also need all this information.
+On top of that, the code itself is rather different between the turns,
+and on the player's turn I need the board, both markers, the remaining valid moves, and the info for the scoreboard (the number of player wins, comp wins, and total wins needed to win match).
+
+The player's turn involves user input within a loop, checking that the input results in a valid move, and then updating the board.
+However, the player can also call up the scoreboard, and there is a message that appears if the input is invalid.
+The computer's turn involves branching decision-making based on the preferability of each type of move and the level of computer difficulty.
+
+Because of this, I cannot combine the two turns into a single method without maintaining the separate methods, although these could be placed inside an overarching method...
+something like: #current_player_takes_turn(brd, play_mark, comp_mark, level, valid_moves, play_wins, comp_wins, match_wins, current_player),
+which is so long that it triggers the line length complaint from rubocop even without indentation or anything else on the line (length == 122).
+
+The method itself would be relatively simple, in that I would just use an if/then statement to execute the code and methods necessary for either turn, depending on the value of current_player.
+Finally, the code for #alternate_player(current_player) would be fairly simple as well, simply swapping the value of current_player in some way that
+mutates the object it refers to (since reassignment within a method definition would not affect the value of the variables outside of the method definition). I could do something like have
+`current_player` be an array with either 'human' or 'computer' inside it. That way, I can mutate the array by replacing its contents (swapping the player) with one or the other based on what I
+detect to be inside it, like
+
+```
+if current_player.first == 'human'
+  current_player.pop
+  current_player << 'computer'
+elsif...
+```
+
+However, it seems to me like this is simply too much for a single method to do and that it's not a best practice to use a method that requires passing in 9 arguments.
+On the other hand, this would mean that the game loop itself would be much easier to parse.
+
+I can start by moving the code required for each turn into separate methods that enact the full turn.
+Then, I can swap the turn order more easily using a conditional flow that is sensitive to who has been chosen to go first. Something like:
+
+```
+loop do
+  if current_player.first == 'human'
+    human_turn(*args)
+  else
+    computer_turn(*args)
+  end
+
+  break if someone_won?(*args) || board_full?(*args)
+  alternate_player(*args) # I don't actually need to use `current_player = alternate_player` because my method mutates the value of current_player directly
+end
+
+With this end result, I'm still solving the challenge posed by #6 in that I no longer have to repeat the line checking for break conditions,
+plus this is necessary if I want to clean up the game loop and make the turn order adjustable.
+
+Algorithm:
+
+I'll start by moving each turn into a single method which carries out the various tasks involved, using my currently existing sub-methods as needed.
+Next, I will create the `current_player` variable, initialized with a value of [], and use prompts and a player input loop to initially fill it (mutate it) so it contains 'human' or 'computer'.
+Then, I will create the #alternate_player method as described above.
+I will then use the above-described structure for the game loop, thus solving 5C and 6.
+Finally, I will add in an option to the prompts/loop which initially fills the empty `current_player` array that allows the player to have the computer decide who goes first.
+  For this, I think it'd make sense to have the computer choose based on difficulty level, using a #computer_picks method.
+    For easy, the computer should have the human go first.
+    For normal or hard it should be random.
+    For demonic it should always choose itself, increasing the liklihood that it wins.
+
 =end
 # rubocop:enable Layout/LineLength
 
@@ -282,19 +354,19 @@ def prompt(string)
   puts "=> #{string}"
 end
 
-def determine_winner(brd, player_mark, comp_mark)
+def determine_winner(brd, hum_mark, comp_mark)
   WINNING_COMBINATIONS.each do |combo|
-    if combo.all? { |num| brd[num] == player_mark }
-      return 'player'
+    if combo.all? { |num| brd[num] == hum_mark }
+      return 'human'
     elsif combo.all? { |num| brd[num] == comp_mark }
       return 'computer'
     end
   end
-  nil # returns nil if neither player nor computer have won
+  nil # returns nil if neither human nor computer have won
 end
 
-def someone_won?(brd, player_mark, comp_mark)
-  !!determine_winner(brd, player_mark, comp_mark)
+def someone_won?(brd, hum_mark, comp_mark)
+  !!determine_winner(brd, hum_mark, comp_mark)
 end # returns a string or nil, `!!` changes to boolean
 
 def full_board?(brd) # if board is full, this should return true.
@@ -326,9 +398,9 @@ def show_tutorial_board
   display_board(tutorial_board)
 end
 
-def display_scoreboard(player_wins, comp_wins, match_wins)
+def display_scoreboard(hum_wins, comp_wins, match_wins)
   prompt "SCOREBOARD"
-  prompt "Player has won #{player_wins} games."
+  prompt "Player has won #{hum_wins} games."
   prompt "Computer has won #{comp_wins} games."
   prompt "Total games needed to win match: #{match_wins}"
 end
@@ -345,17 +417,18 @@ end
 # given the tasks they handle. Not without breaking computer_moves
 # into a bunch of smaller methods based on the difficulty level, or
 # find_final_sqaure into two separate methods (1 for each mode).
-# They're each down to 8/7 when detected, so it doesn't seem too bad.
+# They're each down to 8/7 when detected, so it doesn't seem too bad
+# as a cost for keeping the code DRY.
 def find_final_square(brd, play_mark, comp_mark, mode)
   final_square = nil
 
   WINNING_COMBINATIONS.each do |line|
-    player_squares = brd.values_at(*line).count(play_mark)
+    hum_squares = brd.values_at(*line).count(play_mark)
     computer_squares = brd.values_at(*line).count(comp_mark)
-    squares_filled = player_squares + computer_squares
+    squares_filled = hum_squares + computer_squares
     next unless squares_filled == 2
 
-    if (player_squares == 2 && mode == 'defense') ||
+    if (hum_squares == 2 && mode == 'defense') ||
        (computer_squares == 2 && mode == 'offense')
       final_square = line.select { |square| brd[square] == ' ' }.first
     end
@@ -387,6 +460,54 @@ end
 # rubocop:enable Metrics/PerceivedComplexity
 # rubocop:enable Metrics/CyclomaticComplexity
 
+def human_turn(brd, hum_mark, hum_wins, comp_wins, match_wins)
+  loop do # human turn loop
+    prompt "Choose a square: #{list_valid_moves(brd)}"
+    user_input = gets.chomp
+
+    if valid_move?(brd, user_input.to_i) # to match the board hash keys
+      brd[user_input.to_i] = hum_mark # place human's mark on the board
+      display_board(brd)
+      break
+    elsif user_input.downcase.start_with?('s') # 'score' or 'scoreboard'
+      display_scoreboard(hum_wins, comp_wins, match_wins)
+    else
+      show_tutorial_board
+      prompt '^^^ As a reminder, here is the ordering for the squares.'
+      display_board(brd)
+    end
+  end
+end
+
+def computer_turn(brd, hum_mark, comp_mark, level)
+  prompt "My supercomputer will surely outsmart you! Just watch!"
+  valid_moves = brd.keys.select { |key| brd[key] == ' ' }
+  computer_moves(brd, hum_mark, comp_mark, level, valid_moves)
+  display_board(brd)
+end
+
+def alternate_player(current_player)
+  current = current_player.pop
+
+  if current == 'human'
+    current_player << 'computer'
+  elsif current == 'computer'
+    current_player << 'human'
+  end
+end
+
+def computer_picks(level)
+  options = ['human', 'computer']
+
+  if level == 1
+    'human'
+  elsif level <= 3
+    options.sample
+  elsif level >= 4
+    'computer'
+  end
+end
+
 ### Meat of program (user input, game, etc.) is below this point ###
 
 prompt 'Welcome to Tic Tac Toe!'
@@ -408,18 +529,18 @@ end
 prompt "Okay, would you like to play as X's or O's?"
 marking_choice = gets.chomp.upcase
 if marking_choice == 'X'
-  player_mark = 'X'
+  hum_mark = 'X'
   comp_mark = 'O'
 elsif (marking_choice == 'O') || (marking_choice == '0')
-  player_mark = 'O'
+  hum_mark = 'O'
   comp_mark = 'X'
 elsif (marking_choice.length == 1) && (marking_choice != ' ')
   prompt "That's an...interesting choice. Sure, let's go with that."
-  player_mark = marking_choice
+  hum_mark = marking_choice
   comp_mark = 'O'
 else
   prompt "Funny. Why don't we just make you X's and we'll move on."
-  player_mark = 'X'
+  hum_mark = 'X'
   comp_mark = 'O'
 end
 
@@ -447,62 +568,78 @@ loop do
   end
 end
 
-prompt "And how many games should you have to win to win the whole match?"
+current_player = []
+prompt 'We need to decide who goes first. Do you want to pick? y/n'
+loop do
+  accept_picking = gets.chomp.downcase
+
+  if accept_picking.start_with?('y')
+    prompt "Okay, who'll go first then? Human or computer?"
+
+    loop do
+      human_choice = gets.chomp.downcase
+
+      if human_choice == 'computer'
+        current_player << human_choice
+        break
+      elsif human_choice == 'human' || human_choice == 'me'
+        current_player << 'human'
+        break
+      else
+        prompt "I couldn't make that out. Did you say 'human' or 'computer'?"
+      end
+    end
+
+    break
+  elsif accept_picking.start_with?('n')
+    prompt "Alright then. I'll have the computer pick..."
+
+    comp_choice = computer_picks(level)
+
+    prompt "...Looks like the #{comp_choice} is going to go first."
+    current_player << comp_choice
+    break
+  end
+
+  prompt "I couldn't hear, did you say 'yes' or 'no' to picking who's first?"
+end
+
+prompt 'Lastly, how many games should you have to win to win the whole match?'
 wins_input = gets.chomp.to_i
 if wins_input > 0
   match_wins = wins_input
 else
-  prompt "Not sure what to make of what you just said. So let's just say 3."
-  match_wins = 3
+  prompt "Not sure what to make of what you just said. So let's just say 2."
+  match_wins = 2
 end
 
 prompt 'Alright! Now just hit enter to get started.'
 
-player_wins = 0
+hum_wins = 0
 comp_wins = 0
 
 loop do # main program loop
   gets
   system 'clear'
-  display_scoreboard(player_wins, comp_wins, match_wins)
+  display_scoreboard(hum_wins, comp_wins, match_wins)
   board = initialize_board
   display_board(board)
 
   loop do # single game loop
-    loop do # player turn loop
-      prompt "Choose a square: #{list_valid_moves(board)}"
-      user_turn_input = gets.chomp
-      user_move = user_turn_input.to_i
-
-      if valid_move?(board, user_move) # to match the board hash keys
-        board[user_move] = player_mark # place player's mark on the board
-        display_board(board)
-        break
-      elsif user_turn_input.downcase.start_with?('s') # 'score' or 'scoreboard'
-        display_scoreboard(player_wins, comp_wins, match_wins)
-      else
-        show_tutorial_board
-        prompt '^^^ As a reminder, here is the ordering for the squares.'
-        prompt 'Enter a number to take your turn.'
-        display_board(board)
-      end
+    if current_player.first == 'human'
+      human_turn(board, hum_mark, hum_wins, comp_wins, match_wins)
+    elsif current_player.first == 'computer'
+      computer_turn(board, hum_mark, comp_mark, level)
     end
 
-    break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
-
-    # Computer turn code block
-    prompt "My supercomputer will surely outsmart you! Just watch!"
-    valid_moves = board.keys.select { |key| board[key] == ' ' }
-    computer_moves(board, player_mark, comp_mark, level, valid_moves)
-    display_board(board)
-
-    break if someone_won?(board, player_mark, comp_mark) || full_board?(board)
+    break if someone_won?(board, hum_mark, comp_mark) || full_board?(board)
+    alternate_player(current_player)
   end
 
-  case determine_winner(board, player_mark, comp_mark)
-  when 'player'
+  case determine_winner(board, hum_mark, comp_mark)
+  when 'human'
     prompt "It's not possible! How could my magnificent creation lose!?"
-    player_wins += 1
+    hum_wins += 1
   when 'computer'
     prompt "Ha! I knew you couldn't defeat my supercomputer!"
     comp_wins += 1
@@ -510,13 +647,13 @@ loop do # main program loop
     prompt "Looks like this game is a tie. That's a bit unsatisfying, huh?"
   end
 
-  break if (player_wins >= match_wins) || (comp_wins >= match_wins)
+  break if (hum_wins >= match_wins) || (comp_wins >= match_wins)
 
   prompt "Time for another round. I'll show no mercy!"
   prompt "Hit enter when you're ready for your beating."
 end
 
-if player_wins > comp_wins
+if hum_wins > comp_wins
   prompt "Inferior...being..."
 else
   prompt "You know, I had fun. I hope you did too. Thanks for playing, cutie!"
