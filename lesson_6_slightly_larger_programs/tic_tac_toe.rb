@@ -1,5 +1,4 @@
-require 'pry-byebug'
-
+# CONSTANTS
 WINNING_COMBINATIONS = [
   [1, 2, 3],
   [4, 5, 6],
@@ -12,12 +11,13 @@ WINNING_COMBINATIONS = [
 ]
 
 DIFFICULTY_RATINGS = {
-  'easy' => 1,
-  'normal' => 2,
-  'hard' => 3,
-  'demonic' => 4
+  'easy' => 1, 'e' => 1,
+  'normal' => 2, 'n' => 2,
+  'hard' => 3, 'h' => 3,
+  'demonic' => 4, 'd' => 4
 }
 
+# methods
 # rubocop:disable Metrics/AbcSize
 def display_board(brd)
   puts ""
@@ -64,8 +64,8 @@ def full_board?(brd) # if board is full, this should return true.
   !brd.values.include?(' ') # returns false if any blank spaces on board
 end
 
-def valid_move?(brd, move) # should return true
-  brd[move] == ' ' # as long as the position is blank (choice is valid)
+def valid_move?(brd, move) # returns true if whole number and empty square
+  (move.to_i.to_s == move) && (brd[move.to_i] == ' ')
 end
 
 def joinor(array, separator_string = ', ', final_separator = 'or')
@@ -99,7 +99,7 @@ end
 def give_instructions
   prompt "It's regular Tic Tac Toe rules, except the squares are ordered."
   prompt 'When prompted, simply enter a number (1-9) to pick your square.'
-  prompt "If you need to see the scoreboard, just type 'score' on your turn."
+  prompt "If you forget the ordering or the score, just type '?' or 'help'."
   prompt 'But first, we have a couple more settings to adjust.'
 end
 
@@ -156,22 +156,20 @@ def human_turn(brd, hum_mark, hum_wins, comp_wins, match_wins)
     prompt "Choose a square: #{list_valid_moves(brd)}"
     user_input = gets.chomp
 
-    if valid_move?(brd, user_input.to_i) # to match the board hash keys
+    if valid_move?(brd, user_input) # to match the board hash keys
       brd[user_input.to_i] = hum_mark # place human's mark on the board
-      break
-    elsif user_input.downcase.start_with?('s') # 'score' or 'scoreboard'
-      display_scoreboard(hum_wins, comp_wins, match_wins)
-    else
-      show_tutorial_board
-      prompt '^^^ As a reminder, here is the ordering for the squares.'
       display_board(brd)
+      break
+    elsif user_input == '?' || user_input == 'help'
+      display_scoreboard(hum_wins, comp_wins, match_wins)
+      show_tutorial_board
+    else
+      prompt "Invalid move. If you need help, just enter '?' or 'help'."
     end
   end
 end
 
 def computer_turn(brd, hum_mark, comp_mark, level)
-  system 'clear'
-  prompt "My supercomputer will surely outsmart you! Just watch!"
   valid_moves = brd.keys.select { |key| brd[key] == ' ' }
   computer_moves(brd, hum_mark, comp_mark, level, valid_moves)
   display_board(brd)
@@ -201,6 +199,8 @@ end
 
 ### Meat of program (user input, game, etc.) is below this point ###
 
+# intro
+system 'clear'
 prompt 'Welcome to Tic Tac Toe!'
 prompt 'You are about to face a fearsome computer opponent!'
 
@@ -217,139 +217,151 @@ else
   give_instructions
 end
 
-prompt "What would you like to use as your marker during the game?"
-prompt "Pick anything you want, as long as it's a single character."
-hum_mark = 'X'
-comp_mark = 'O'
-loop do
-  marking_choice = gets.chomp.upcase
+loop do # main program loop (settings adjustment and match)
+  prompt "What would you like to use as your marker during the match?"
+  prompt "Pick anything you want, as long as it's a single character."
+  hum_mark = 'X'
+  comp_mark = 'O'
+  loop do
+    marking_choice = gets.chomp.upcase
 
-  if marking_choice == 'O'
-    prompt "You picked O's? But Compy wanted O's...this is fine."
-    hum_mark = marking_choice
-    comp_mark = 'X'
-    break
-  elsif (marking_choice.length == 1) && (marking_choice != ' ')
-    prompt "That is a choice! Sure, let's go with that."
-    hum_mark = marking_choice
-    comp_mark = 'O'
-    break
-  else
-    prompt "Hey, come on! Single-character only, and no spaces."
+    if marking_choice == 'O'
+      prompt "You picked O's? But Compy wanted O's...this is fine."
+      hum_mark = marking_choice
+      comp_mark = 'X'
+      break
+    elsif (marking_choice.length == 1) && (marking_choice != ' ')
+      prompt "That is a choice! Sure, let's go with that."
+      hum_mark = marking_choice
+      comp_mark = 'O'
+      break
+    else
+      prompt "Hey, come on! Single-character only, and no spaces."
+    end
   end
-end
 
-level = 0
-loop do
-  prompt "Choose your difficulty: easy, normal, hard, or demonic"
-  difficulty = gets.chomp.downcase
-  level = DIFFICULTY_RATINGS[difficulty]
+  level = 0
+  loop do
+    prompt "Choose your difficulty: easy, normal, hard, or demonic"
+    difficulty = gets.chomp.downcase
+    level = DIFFICULTY_RATINGS[difficulty]
 
-  case level
-  when 1
-    prompt 'Not much for thinking, eh? Easy it is!'
-    break
-  when 2
-    prompt 'Fair enough. The standard settings, then.'
-    break
-  when 3
-    prompt "As you wish. Your doom is nigh!"
-    break
-  when 4
-    prompt "NOT TO FIFTY! Just kidding, I'd be happy to crush you!"
-    break
-  else
-    prompt "That's not really an option. Let's try again."
+    case level
+    when 1
+      prompt 'Not much for thinking, eh? Easy it is!'
+      break
+    when 2
+      prompt 'Fair enough. The standard settings, then.'
+      break
+    when 3
+      prompt "As you wish. Your doom is nigh!"
+      break
+    when 4
+      prompt "NOT TO FIFTY! Just kidding, I'd be happy to crush you!"
+      break
+    else
+      prompt "That's not really an option. Let's try again."
+    end
   end
-end
 
-current_player = []
-prompt 'We need to decide who goes first. Do you want to pick? y/n'
-loop do
-  accept_picking = gets.chomp.downcase
+  current_player = []
+  prompt 'We need to decide who goes first. Do you want to pick? y/n'
+  loop do
+    accept_picking = gets.chomp.downcase
 
-  if accept_picking == 'y' || accept_picking == 'yes'
-    prompt "Okay, who'll go first then? Human or computer?"
+    if accept_picking == 'y' || accept_picking == 'yes'
+      prompt "Okay, who'll go first then? Human or computer?"
 
-    loop do
-      human_choice = gets.chomp.downcase
+      loop do
+        human_choice = gets.chomp.downcase
 
-      if human_choice == 'computer' || human_choice == 'c'
-        current_player << human_choice
-        break
-      elsif %w(human h me).include?(human_choice)
-        current_player << 'human'
-        break
-      else
-        prompt "I couldn't make that out. Did you say 'human' or 'computer'?"
+        if human_choice == 'computer' || human_choice == 'c'
+          current_player << human_choice
+          break
+        elsif %w(human h me).include?(human_choice)
+          current_player << 'human'
+          break
+        else
+          prompt "I couldn't make that out. Did you say 'human' or 'computer'?"
+        end
       end
+
+      break
+    elsif accept_picking == 'n' || accept_picking == 'no'
+      prompt "Alright then. I'll have the computer pick..."
+
+      comp_choice = computer_picks(level)
+
+      prompt "...Looks like the #{comp_choice} is going to go first."
+      current_player << comp_choice
+      break
     end
 
-    break
-  elsif accept_picking == 'n' || accept_picking == 'no'
-    prompt "Alright then. I'll have the computer pick..."
-
-    comp_choice = computer_picks(level)
-
-    prompt "...Looks like the #{comp_choice} is going to go first."
-    current_player << comp_choice
-    break
+    prompt "I couldn't hear, did you say 'yes' or 'no' to picking who's first?"
   end
 
-  prompt "I couldn't hear, did you say 'yes' or 'no' to picking who's first?"
-end
-
-prompt 'Lastly, how many games should you have to win to win the whole match?'
-wins_input = gets.chomp.to_i
-if wins_input > 0
-  match_wins = wins_input
-else
-  prompt "Not sure what to make of what you just said. So let's just say 2."
-  match_wins = 2
-end
-
-prompt 'Alright! Now just hit enter to get started.'
-
-hum_wins = 0
-comp_wins = 0
-
-loop do # main program loop
-  gets
-  system 'clear'
-  display_scoreboard(hum_wins, comp_wins, match_wins)
-  board = initialize_board
-  display_board(board)
-
-  loop do # single game loop
-    if current_player.first == 'human'
-      human_turn(board, hum_mark, hum_wins, comp_wins, match_wins)
-    elsif current_player.first == 'computer'
-      computer_turn(board, hum_mark, comp_mark, level)
-    end
-
-    break if someone_won?(board, hum_mark, comp_mark) || full_board?(board)
-    alternate_player(current_player)
-  end
-
-  case determine_winner(board, hum_mark, comp_mark)
-  when 'human'
-    prompt "It's not possible! How could my magnificent creation lose!?"
-    hum_wins += 1
-  when 'computer'
-    prompt "Ha! I knew you couldn't defeat my supercomputer!"
-    comp_wins += 1
+  prompt 'Lastly, how many games should you have to win to win the whole match?'
+  wins_input = gets.chomp.to_i
+  if wins_input > 0
+    match_wins = wins_input
   else
-    prompt "Looks like this game is a tie. That's a bit unsatisfying, huh?"
+    prompt "Not sure what to make of what you just said. So let's just say 2."
+    match_wins = 2
   end
 
-  break if (hum_wins >= match_wins) || (comp_wins >= match_wins)
+  prompt 'Alright! Now just hit enter to get started.'
 
-  prompt "Time for another round. I'll show no mercy!"
-  prompt "Hit enter when you're ready for your beating."
+  hum_wins = 0
+  comp_wins = 0
+
+  loop do # full match loop
+    gets
+    system 'clear'
+    display_scoreboard(hum_wins, comp_wins, match_wins)
+    board = initialize_board
+    display_board(board)
+
+    loop do # single game loop
+      if current_player.first == 'human'
+        human_turn(board, hum_mark, hum_wins, comp_wins, match_wins)
+      elsif current_player.first == 'computer'
+        computer_turn(board, hum_mark, comp_mark, level)
+      end
+
+      system 'clear'
+      display_board(board)
+      break if someone_won?(board, hum_mark, comp_mark) || full_board?(board)
+      alternate_player(current_player)
+    end
+
+    case determine_winner(board, hum_mark, comp_mark)
+    when 'human'
+      prompt "It's not possible! How could my magnificent creation lose!?"
+      hum_wins += 1
+    when 'computer'
+      prompt "Ha! I knew you couldn't defeat my supercomputer!"
+      comp_wins += 1
+    else
+      prompt "Looks like this game is a tie. That's a bit unsatisfying, huh?"
+    end
+
+    break if (hum_wins >= match_wins) || (comp_wins >= match_wins)
+
+    prompt "Time for another round. I'll show no mercy!"
+    prompt "Hit enter when you're ready for your beating."
+  end
+
+  if hum_wins > comp_wins
+    prompt "Inferior...being..."
+  else
+    prompt "WHOOP-WHOOP! OH YEAH! WOO! COMPY YOU'RE A BEAST!"
+  end
+
+  prompt "...would you like to play again? y/n?"
+  play_again = gets.chomp.downcase
+  break unless play_again == 'y' || play_again == 'yes'
+  system 'clear'
+  prompt "Alright! First we've got to go through the settings again."
 end
 
-if hum_wins > comp_wins
-  prompt "Inferior...being..."
-else
-  prompt "You know, I had fun. I hope you did too. Thanks for playing, cutie!"
-end
+prompt "You know, I had fun. I hope you did too. Thanks for playing, cutie!"
