@@ -1,15 +1,5 @@
-require 'pry-byebug'
-
-CARD_VALUES = {
-  'two' => 2, 'three' => 3, 'four' => 4,
-  'five' => 5, 'six' => 6, 'seven' => 7,
-  'eight' => 8, 'nine' => 9, 'ten' => 10,
-  'jack' => 10, 'queen' => 10, 'king' => 10,
-  'ace' => 11 # default value unless conditions are met to lower the value to 1
-}
-
 ALL_CARDS = [
-  'ace', 'ace', 'ace', 'ace',
+  'Ace', 'Ace', 'Ace', 'Ace',
   '2', '2', '2', '2',
   '3', '3', '3', '3',
   '4', '4', '4', '4',
@@ -19,9 +9,9 @@ ALL_CARDS = [
   '8', '8', '8', '8',
   '9', '9', '9', '9',
   '10', '10', '10', '10',
-  'jack', 'jack', 'jack', 'jack',
-  'queen', 'queen', 'queen', 'queen',
-  'king', 'king', 'king', 'king'
+  'Jack', 'Jack', 'Jack', 'Jack',
+  'Queen', 'Queen', 'Queen', 'Queen',
+  'King', 'King', 'King', 'King'
 ]
 
 def prompt(msg)
@@ -50,13 +40,16 @@ def announce_visible_dealer_cards(dealer_hand)
   prompt "Dealer has: #{list_of_visible_dealer_cards} and one unknown card."
 end
 
-def announce_all_visible_cards(player_hand, dealer_hand)
-  announce_visible_dealer_cards(dealer_hand)
-
+def announce_player_cards(player_hand)
   all_player_cards = player_hand[:face_down_card] + player_hand[:face_up_cards]
   list_of_player_cards = joinand(all_player_cards)
 
   prompt "You have: #{list_of_player_cards}."
+end
+
+def announce_all_visible_cards(player_hand, dealer_hand)
+  announce_visible_dealer_cards(dealer_hand)
+  announce_player_cards(player_hand)
 end
 
 def hit!(deck, hand)
@@ -64,28 +57,25 @@ def hit!(deck, hand)
 end
 
 def busted?(hand)
-  21 < find_total_hand_value(hand)
+  find_total_value(hand) > 21
 end
 
-def find_total_hand_value(hand)
-  total_value = 0
+def find_total_value(hand)
   all_cards = hand[:face_up_cards] + hand[:face_down_card]
-  total_aces = all_cards.count('ace')
-  all_cards_except_aces = all_cards.reject { |card| card == 'ace' }
-  
+  total_aces = all_cards.count('Ace')
+  total_value = total_aces
+  all_cards_except_aces = all_cards.reject { |card| card == 'Ace' }
+
   all_cards_except_aces.each do |card|
-    if card.to_i == 0
-      total_value += 10
-    else
-      total_value += card.to_i
-    end
+    total_value +=  if card.to_i == 0
+                      10
+                    else
+                      card.to_i
+                    end
   end
 
-  total_aces.times {total_value += 1}
-  total_aces.times do
-    if total_value < 12
-      total_value += 10
-    end
+  if total_value < 12 && total_aces > 0
+    total_value += 10
   end
 
   total_value
@@ -95,9 +85,9 @@ def player_turn(deck, player_hand, dealer_hand)
   loop do
     announce_all_visible_cards(player_hand, dealer_hand)
 
-    prompt "Would you like to hit or stay?"
+    prompt "Would you like to (h)it or (s)tay?"
     answer = gets.chomp.downcase
-    
+
     if answer == 'hit' || answer == 'h'
       hit!(deck, player_hand)
       break if busted?(player_hand)
@@ -111,11 +101,12 @@ end
 
 def dealer_turn(deck, dealer_hand)
   loop do
-    if find_total_hand_value(dealer_hand) < 17
+    if find_total_value(dealer_hand) < 17
       hit!(deck, dealer_hand)
       prompt "Dealer hits!"
       announce_visible_dealer_cards(dealer_hand)
     else
+      prompt "Dealer stays."
       break
     end
   end
@@ -126,8 +117,15 @@ def reveal_hidden_card(dealer_hand)
 end
 
 def tally_up_hands(player_hand, dealer_hand)
-  prompt "Dealer's total hand value: #{find_total_hand_value(dealer_hand)}."
-  prompt "Your total hand value: #{find_total_hand_value(player_hand)}."
+  prompt "Dealer's total hand value: #{find_total_value(dealer_hand)}."
+  prompt "Your total hand value: #{find_total_value(player_hand)}."
+end
+
+def play_again?
+  puts "-------------"
+  prompt "Do you want to play again? (y or n)"
+  answer = gets.chomp.downcase
+  answer == 'y' || answer == 'yes'
 end
 
 # Actual game code below #
@@ -149,11 +147,12 @@ loop do # main program loop
 
   deck = ALL_CARDS.shuffle
 
-  loop do # game loop
+  loop do # single game loop
     deal_starting_hands!(deck, player_hand, dealer_hand)
-    
+
     player_turn(deck, player_hand, dealer_hand)
     if busted?(player_hand)
+      announce_player_cards(player_hand)
       prompt "Sorry, you busted!"
       break
     else
@@ -170,20 +169,18 @@ loop do # main program loop
     # compare hands to find winner
     reveal_hidden_card(dealer_hand)
     tally_up_hands(player_hand, dealer_hand)
-    if find_total_hand_value(player_hand) < find_total_hand_value(dealer_hand)
+    if find_total_value(player_hand) < find_total_value(dealer_hand)
       prompt "Dealer wins!"
-    elsif find_total_hand_value(player_hand) > find_total_hand_value(dealer_hand)
+    elsif find_total_value(player_hand) > find_total_value(dealer_hand)
       prompt "You won! Congratulations!"
     else
       prompt "This game was a tie."
     end
 
-  break
+    break
   end
 
-  prompt 'Would you like to play again?'
-  answer = gets.chomp.downcase
-  break unless answer == 'y' || answer == 'yes'
+  break unless play_again?
 end
 
 # end of program message
