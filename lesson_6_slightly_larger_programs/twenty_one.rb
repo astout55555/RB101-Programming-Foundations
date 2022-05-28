@@ -84,17 +84,17 @@ def rearrange_dealer_hand!(game_data)
 end
 
 def end_of_round_output(game_data)
+  sleep 2
   d_list = rearrange_dealer_hand!(game_data)
   p_list = list_cards(game_data[:player][:hand])
 
+  system 'clear'
   puts "=============="
-  prompt "It is time to see who won the game of #{game_data[:game_name_limit]}."
+  prompt "The name of the game is '#{game_data[:game_name_limit]}'"
   prompt "Dealer has #{d_list}, a total of #{game_data[:dealer][:total]}."
   prompt "You have #{p_list}, a total of #{game_data[:player][:total]}."
-  puts "=============="
-
-  sleep 2
   display_result(game_data)
+  puts "============="
 end
 
 def busted?(game_data, hand_total)
@@ -149,7 +149,7 @@ def place_bets!(game_data)
   game_data[:dealer][:stash] -= bet
   game_data[:pot] += (bet * 2)
 
-  puts "========================"
+  puts "-----------------------"
   prompt "The pot has a total of #{game_data[:pot]} smackums."
 end
 
@@ -189,11 +189,11 @@ end
 
 def undo_match?
   puts "~~~~~~~~#############################~~~~~~~~"
-  prompt "Hello. I am the great will of the macrocosm."
-  prompt "If you like, I can reset everything to how it was."
-  prompt "Would you like me to undo these events? (y or n)"
-  answer = gets.chomp.downcase
-  answer == 'y' || answer == 'yes'
+  prompt "HELLO. I AM THE GREAT WILL OF THE MACROCOSM."
+  prompt "IF YOU LIKE, I CAN RESET EVERYTHING TO HOW IT WAS."
+  prompt "WOULD YOU LIKE ME TO UNDO THESE EVENTS? (Y OR N)"
+  answer = gets.chomp.upcase
+  answer == 'Y' || answer == 'YES'
 end
 
 def start_game!(game_data)
@@ -268,11 +268,12 @@ loop do # main program loop
 
   name_the_game!(game_data)
   prompt "That was it! Right, the game of #{game_data[:game_name_limit]}!"
-  prompt "I think I was pretty good at this...? Let's play!"
+  prompt "...I think I'm good at this...? Let's play!"
+  prompt "We'll go for 5 rounds, or until one of us is broke!"
 
   while round < 5 # game loop (5 rounds max)
     round += 1
-    prompt "Say something when you're ready to start round #{round}."
+    prompt "Hit enter when you're ready to start round #{round}."
     gets
 
     # set up and place bets
@@ -312,16 +313,21 @@ loop do # main program loop
              (game_data[:dealer][:stash] <= 0)
   end
 
+  # end of match output based on stash sizes
   if game_data[:player][:stash] <= 0
     prompt "Come play with me again next time your wallet's weighing you down!"
   elsif game_data[:dealer][:stash] <= 0
     prompt "HOO BOY...time to see if I've got any more internal organs to sell."
+  elsif game_data[:player][:stash] > game_data[:dealer][:stash]
+    prompt "I'm having fun but I better stop before I go broke!"
+  elsif game_data[:player][:stash] < game_data[:dealer][:stash]
+    prompt "As much as I love robbing you I better leave you with some dignity."
   else
-    prompt "Hey that was a good time, but it's probably best we end here."
-    prompt "Let's play again sometime!"
+    prompt "That was a lot of fun! How 'bout we end on a high note?"
   end
 
+  prompt "Let's play again sometime!"
   break unless undo_match?
 end
 
-prompt "That's all folks!"
+puts "~~~That's all folks!~~~"
