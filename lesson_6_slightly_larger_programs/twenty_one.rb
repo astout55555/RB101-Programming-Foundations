@@ -1,5 +1,3 @@
-require 'pry-byebug'
-
 ALL_CARDS = [
   'Ace', 'Ace', 'Ace', 'Ace',
   '2', '2', '2', '2',
@@ -44,6 +42,8 @@ end
 
 def show_available_info(game_data)
   prompt "The game is: '#{game_data[:game_name_limit]}'"
+  prompt "Your stash: #{game_data[:player][:stash]} smackums."
+  prompt "Dealer's stash: #{game_data[:dealer][:stash]} smackums."
   announce_visible_dealer_cards(game_data[:dealer][:hand])
   prompt "You have: #{list_cards(game_data[:player][:hand])}."
   prompt "Your current total is: #{game_data[:player][:total]}."
@@ -64,16 +64,18 @@ def detect_result(game_data)
 end
 
 def display_result(game_data)
+  prompt "The pot had a total of #{game_data[:pot]} smackums."
+
   case detect_result(game_data)
   when :p_busted then prompt "You busted! Dealer wins!"
   when :d_busted then prompt "Dealer busted! You win!"
   when :d_wins then prompt "Dealer wins!"
   when :p_wins then prompt "You win! Congratulations!"
-  when :tie then prompt "This game was a tie."
+  when :tie then prompt "This game is a tie, so the house takes the pot!"
   end
 
-  prompt "Player wins: #{game_data[:player][:wins]}."
-  prompt "Dealer wins: #{game_data[:dealer][:wins]}."
+  prompt "Player stash: #{game_data[:player][:stash]}."
+  prompt "Dealer stash: #{game_data[:dealer][:stash]}."
 end
 
 def rearrange_dealer_hand!(game_data)
@@ -86,11 +88,12 @@ def end_of_round_output(game_data)
   p_list = list_cards(game_data[:player][:hand])
 
   puts "=============="
-  prompt "It is time to see who won the game of #{game_data[:game_name_limit]}:"
+  prompt "It is time to see who won the game of #{game_data[:game_name_limit]}."
   prompt "Dealer has #{d_list}, a total of #{game_data[:dealer][:total]}."
   prompt "You have #{p_list}, a total of #{game_data[:player][:total]}."
   puts "=============="
 
+  sleep 2
   display_result(game_data)
 end
 
@@ -123,10 +126,35 @@ def hit!(game_data, p_or_d)
   p_or_d[:hand] << game_data[:deck].shift
 end
 
+def find_lower_stash(game_data)
+  if game_data[:player][:stash] < game_data[:dealer][:stash]
+    game_data[:player][:stash]
+  else
+    game_data[:dealer][:stash]
+  end
+end
+
+def place_bets!(game_data)
+  bet = 0
+  lower_stash = find_lower_stash(game_data)
+
+  loop do
+    prompt "Place your bet, up to #{lower_stash}."
+    bet = gets.chomp.to_i
+    break if bet > 0 && bet <= lower_stash
+    prompt "The bet has to be between 0 and the smaller of our two stashes."
+  end
+
+  game_data[:player][:stash] -= bet
+  game_data[:dealer][:stash] -= bet
+  game_data[:pot] += (bet * 2)
+
+  puts "========================"
+  prompt "The pot has a total of #{game_data[:pot]} smackums."
+end
+
 def player_turn(game_data)
   loop do
-    show_available_info(game_data)
-
     prompt "Would you like to (h)it or (s)tay?"
     answer = gets.chomp.downcase
 
@@ -134,10 +162,11 @@ def player_turn(game_data)
       hit!(game_data, game_data[:player])
       update_total!(game_data, game_data[:player])
       break if busted?(game_data, game_data[:player][:total])
+      show_available_info(game_data)
     elsif answer == 'stay' || answer == 's'
       break
     else
-      prompt "Sorry, that's not a valid answer."
+      prompt "It's one or the other, bub."
     end
   end
 end
@@ -148,19 +177,21 @@ def dealer_turn(game_data)
     sleep 1
 
     if game_data[:dealer][:total] < game_data[:dealer_stays_at]
-      prompt "Dealer hits!"
+      prompt "[Dealer hits!]"
       hit!(game_data, game_data[:dealer])
       announce_visible_dealer_cards(game_data[:dealer][:hand])
     else
-      prompt "Dealer stays."
+      prompt "[Dealer stays.]"
       break
     end
   end
 end
 
-def play_again?
-  puts "-------------"
-  prompt "That ends the match! Do you want to play again? (y or n)"
+def undo_match?
+  puts "~~~~~~~~#############################~~~~~~~~"
+  prompt "Hello. I am the great will of the macrocosm."
+  prompt "If you like, I can reset everything to how it was."
+  prompt "Would you like me to undo these events? (y or n)"
   answer = gets.chomp.downcase
   answer == 'y' || answer == 'yes'
 end
@@ -220,36 +251,44 @@ loop do # main program loop
     player: {
       hand: [],
       total: 0,
-      wins: 0
+      stash: 100
     },
     dealer: {
       hand: [],
       total: 0,
-      wins: 0
+      stash: 100
     },
     deck: [],
     game_name_limit: 21,
-    dealer_stays_at: 17
+    dealer_stays_at: 17,
+    pot: 0
   }
+
+  round = 0
 
   name_the_game!(game_data)
   prompt "That was it! Right, the game of #{game_data[:game_name_limit]}!"
   prompt "I think I was pretty good at this...? Let's play!"
 
-  loop do # game loop (until someone wins 5 times)
-    prompt "Hit 'enter' to continue."
+  while round < 5 # game loop (5 rounds max)
+    round += 1
+    prompt "Say something when you're ready to start round #{round}."
     gets
 
+    # set up and place bets
     start_game!(game_data)
+    game_data[:pot] = 0
+    update_total!(game_data, game_data[:player])
+    show_available_info(game_data)
+    place_bets!(game_data)
 
     # player turn
-    update_total!(game_data, game_data[:player])
     player_turn(game_data)
     if busted?(game_data, game_data[:player][:total])
-      game_data[:dealer][:wins] += 1
+      game_data[:dealer][:stash] += game_data[:pot]
       update_total!(game_data, game_data[:dealer])
       end_of_round_output(game_data)
-      game_data[:dealer][:wins] == 5 ? break : next
+      game_data[:player][:stash] <= 0 ? break : next
     else
       prompt 'You chose to stay.'
     end
@@ -257,24 +296,32 @@ loop do # main program loop
     # dealer turn
     dealer_turn(game_data)
     if busted?(game_data, game_data[:dealer][:total])
-      game_data[:player][:wins] += 1
+      game_data[:player][:stash] += game_data[:pot]
       end_of_round_output(game_data)
-      game_data[:player][:wins] == 5 ? break : next
+      game_data[:dealer][:stash] <= 0 ? break : next
     end
 
     # compare hands to find winner if nobody busted
     if detect_result(game_data) == :p_wins
-      game_data[:player][:wins] += 1
-    elsif detect_result(game_data) == :d_wins
-      game_data[:dealer][:wins] += 1
+      game_data[:player][:stash] += game_data[:pot]
+    else
+      game_data[:dealer][:stash] += game_data[:pot]
     end
     end_of_round_output(game_data)
-    break if (game_data[:player][:wins] == 5) ||
-             (game_data[:dealer][:wins] == 5)
+    break if (game_data[:player][:stash] <= 0) ||
+             (game_data[:dealer][:stash] <= 0)
   end
 
-  break unless play_again?
+  if game_data[:player][:stash] <= 0
+    prompt "Come play with me again next time your wallet's weighing you down!"
+  elsif game_data[:dealer][:stash] <= 0
+    prompt "HOO BOY...time to see if I've got any more internal organs to sell."
+  else
+    prompt "Hey that was a good time, but it's probably best we end here."
+    prompt "Let's play again sometime!"
+  end
+
+  break unless undo_match?
 end
 
-# end of program message
-prompt "That was fun, let's play again sometime!"
+prompt "That's all folks!"
