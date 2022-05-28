@@ -42,15 +42,17 @@ def announce_visible_dealer_cards(dealer_hand)
   prompt "Dealer has: #{visible_dealer_cards} and one unknown card."
 end
 
-def announce_all_visible_cards(game_data)
+def show_available_info(game_data)
+  prompt "The game is: '#{game_data[:game_name_limit]}'"
   announce_visible_dealer_cards(game_data[:dealer][:hand])
   prompt "You have: #{list_cards(game_data[:player][:hand])}."
+  prompt "Your current total is: #{game_data[:player][:total]}."
 end
 
 def detect_result(game_data)
-  if busted?(game_data[:player][:total])
+  if busted?(game_data, game_data[:player][:total])
     :p_busted
-  elsif busted?(game_data[:dealer][:total])
+  elsif busted?(game_data, game_data[:dealer][:total])
     :d_busted
   elsif game_data[:player][:total] < game_data[:dealer][:total]
     :d_wins
@@ -69,38 +71,37 @@ def display_result(game_data)
   when :p_wins then prompt "You win! Congratulations!"
   when :tie then prompt "This game was a tie."
   end
+
+  prompt "Player wins: #{game_data[:player][:wins]}."
+  prompt "Dealer wins: #{game_data[:dealer][:wins]}."
+end
+
+def rearrange_dealer_hand!(game_data)
+  face_down_card = game_data[:dealer][:hand].shift
+  list_cards((game_data[:dealer][:hand] + [face_down_card]))
 end
 
 def end_of_round_output(game_data)
-  face_down_card = game_data[:dealer][:hand].shift
-  d_list = list_cards((game_data[:dealer][:hand] + [face_down_card]))
+  d_list = rearrange_dealer_hand!(game_data)
   p_list = list_cards(game_data[:player][:hand])
 
   puts "=============="
+  prompt "It is time to see who won the game of #{game_data[:game_name_limit]}:"
   prompt "Dealer has #{d_list}, a total of #{game_data[:dealer][:total]}."
   prompt "You have #{p_list}, a total of #{game_data[:player][:total]}."
   puts "=============="
 
   display_result(game_data)
-
-  prompt "Player wins: #{game_data[:player][:wins]}."
-  prompt "Dealer wins: #{game_data[:dealer][:wins]}."
-  prompt "Hit enter to continue."
-  gets
 end
 
-def hit!(deck, hand)
-  hand << deck.shift
+def busted?(game_data, hand_total)
+  hand_total > game_data[:game_name_limit]
 end
 
-def busted?(hand_total)
-  hand_total > 21
-end
-
-def find_total_value(hand)
-  total_aces = hand.count('Ace')
-  total_value = total_aces
-  all_cards_except_aces = hand.reject { |card| card == 'Ace' }
+def update_total!(game_data, p_or_d)
+  total_aces = p_or_d[:hand].count('Ace')
+  total_value = total_aces * 11
+  all_cards_except_aces = p_or_d[:hand].reject { |card| card == 'Ace' }
 
   all_cards_except_aces.each do |card|
     total_value += if card.to_i == 0
@@ -110,24 +111,29 @@ def find_total_value(hand)
                    end
   end
 
-  if total_value < 12 && total_aces > 0
-    total_value += 10
+  while (total_value > game_data[:game_name_limit]) && (total_aces > 0)
+    total_value -= 10
+    total_aces -= 1
   end
 
-  total_value
+  p_or_d[:total] = total_value
+end
+
+def hit!(game_data, p_or_d)
+  p_or_d[:hand] << game_data[:deck].shift
 end
 
 def player_turn(game_data)
   loop do
-    announce_all_visible_cards(game_data)
+    show_available_info(game_data)
 
     prompt "Would you like to (h)it or (s)tay?"
     answer = gets.chomp.downcase
 
     if answer == 'hit' || answer == 'h'
-      hit!(game_data[:deck], game_data[:player][:hand])
-      game_data[:player][:total] = find_total_value(game_data[:player][:hand])
-      break if busted?(game_data[:player][:total])
+      hit!(game_data, game_data[:player])
+      update_total!(game_data, game_data[:player])
+      break if busted?(game_data, game_data[:player][:total])
     elsif answer == 'stay' || answer == 's'
       break
     else
@@ -138,12 +144,12 @@ end
 
 def dealer_turn(game_data)
   loop do
-    game_data[:dealer][:total] = find_total_value(game_data[:dealer][:hand])
+    update_total!(game_data, game_data[:dealer])
     sleep 1
 
-    if game_data[:dealer][:total] < 17
-      hit!(game_data[:deck], game_data[:dealer][:hand])
+    if game_data[:dealer][:total] < game_data[:dealer_stays_at]
       prompt "Dealer hits!"
+      hit!(game_data, game_data[:dealer])
       announce_visible_dealer_cards(game_data[:dealer][:hand])
     else
       prompt "Dealer stays."
@@ -169,11 +175,44 @@ def start_game!(game_data)
   deal_starting_hands!(game_data)
 end
 
+def set_game_parameters!(game_data, player_answer)
+  case player_answer
+  when '21'
+    game_data[:game_name_limit] = 21
+    game_data[:dealer_stays_at] = 17
+  when '31'
+    game_data[:game_name_limit] = 31
+    game_data[:dealer_stays_at] = 27
+  when '41'
+    game_data[:game_name_limit] = 41
+    game_data[:dealer_stays_at] = 37
+  when '51'
+    game_data[:game_name_limit] = 51
+    game_data[:dealer_stays_at] = 47
+  end
+end
+
+def name_the_game!(game_data)
+  answer = ''
+
+  loop do
+    prompt "Can you remind me what the name of the game is? Something-one?"
+    puts '---------------------------------------------------------------'
+    puts "[What do you tell them?]"
+    puts "[Try 21...or 31, 41, or even 51 if you want to mess with them!]"
+
+    answer = gets.chomp
+    break if ['21', '31', '41', '51'].include?(answer)
+    prompt "Hey, don't try to pull a fast one on me. That's not it!"
+  end
+
+  set_game_parameters!(game_data, answer)
+end
+
 # Actual game code below #
 
 system 'clear'
-prompt 'Welcome to the game of Twenty-one! Hit enter to start.'
-gets
+prompt 'Welcome to the game of...uhh...umm...'
 
 loop do # main program loop
   # initialize or reinitialize empty game_data hash
@@ -188,17 +227,27 @@ loop do # main program loop
       total: 0,
       wins: 0
     },
-    deck: []
+    deck: [],
+    game_name_limit: 21,
+    dealer_stays_at: 17
   }
 
+  name_the_game!(game_data)
+  prompt "That was it! Right, the game of #{game_data[:game_name_limit]}!"
+  prompt "I think I was pretty good at this...? Let's play!"
+
   loop do # game loop (until someone wins 5 times)
+    prompt "Hit 'enter' to continue."
+    gets
+
     start_game!(game_data)
 
     # player turn
+    update_total!(game_data, game_data[:player])
     player_turn(game_data)
-    game_data[:player][:total] = find_total_value(game_data[:player][:hand])
-    if busted?(game_data[:player][:total])
+    if busted?(game_data, game_data[:player][:total])
       game_data[:dealer][:wins] += 1
+      update_total!(game_data, game_data[:dealer])
       end_of_round_output(game_data)
       game_data[:dealer][:wins] == 5 ? break : next
     else
@@ -207,7 +256,7 @@ loop do # main program loop
 
     # dealer turn
     dealer_turn(game_data)
-    if busted?(game_data[:dealer][:total])
+    if busted?(game_data, game_data[:dealer][:total])
       game_data[:player][:wins] += 1
       end_of_round_output(game_data)
       game_data[:player][:wins] == 5 ? break : next
