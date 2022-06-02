@@ -92,6 +92,37 @@ def end_of_round_output(game_data)
   puts "==========================="
 end
 
+def detect_match_result(game_data)
+  if game_data[:player][:stash] <= 0
+    :player_broke
+  elsif game_data[:dealer][:stash] <= 0
+    :dealer_broke
+  elsif game_data[:player][:stash] > game_data[:dealer][:stash]
+    :player_gained
+  elsif game_data[:player][:stash] < game_data[:dealer][:stash]
+    :dealer_gained
+  else
+    :stashes_even
+  end
+end
+
+def end_of_match_output(game_data)
+  case detect_match_result(game_data)
+  when :player_broke
+    prompt "BAM! Come back next time your wallet's weighing you down!"
+  when :dealer_broke
+    prompt "HOO BOY...time to see if I've got any more internal organs to sell."
+  when :player_gained
+    prompt "I'm having fun but I better stop before I go broke!"
+  when :dealer_gained
+    prompt "As much as I love robbing you I better leave you with some dignity."
+  else
+    prompt "That was a lot of fun! How 'bout we end on a high note?"
+  end
+
+  prompt "Let's play again sometime!"
+end
+
 def busted?(game_data, hand_total)
   hand_total > game_data[:game_name_limit]
 end
@@ -261,7 +292,7 @@ loop do # main program loop
 
   round = 0
 
-  name_the_game!(game_data)
+  name_the_game!(game_data) # changes name and rules of game accordingly
   prompt "That was it! Right, the game of #{game_data[:game_name_limit]}!"
   prompt "...I think I'm good at this...? Let's play!"
   prompt "We'll go for 5 rounds, or until one of us is broke!"
@@ -279,7 +310,7 @@ loop do # main program loop
     place_bet!(game_data)
     fill_pot!(game_data)
 
-    # player turn
+    # player turn and consequences for busting
     player_turn(game_data)
     if busted?(game_data, game_data[:player][:total])
       game_data[:dealer][:stash] += game_data[:pot]
@@ -290,7 +321,7 @@ loop do # main program loop
       prompt 'You chose to stay.'
     end
 
-    # dealer turn
+    # dealer turn and consequences for busting
     dealer_turn(game_data)
     if busted?(game_data, game_data[:dealer][:total])
       game_data[:player][:stash] += game_data[:pot]
@@ -298,7 +329,7 @@ loop do # main program loop
       game_data[:dealer][:stash] <= 0 ? break : next
     end
 
-    # compare hands to find winner if nobody busted
+    # if nobody busted, compare hands and reward winner
     if detect_result(game_data) == :p_wins
       game_data[:player][:stash] += game_data[:pot]
     else
@@ -309,20 +340,7 @@ loop do # main program loop
              (game_data[:dealer][:stash] <= 0)
   end
 
-  # end of match output based on stash sizes
-  if game_data[:player][:stash] <= 0
-    prompt "BAM! Come back next time your wallet's weighing you down!"
-  elsif game_data[:dealer][:stash] <= 0
-    prompt "HOO BOY...time to see if I've got any more internal organs to sell."
-  elsif game_data[:player][:stash] > game_data[:dealer][:stash]
-    prompt "I'm having fun but I better stop before I go broke!"
-  elsif game_data[:player][:stash] < game_data[:dealer][:stash]
-    prompt "As much as I love robbing you I better leave you with some dignity."
-  else
-    prompt "That was a lot of fun! How 'bout we end on a high note?"
-  end
-
-  prompt "Let's play again sometime!"
+  end_of_match_output(game_data)
   break unless undo_match?
 end
 
