@@ -1,17 +1,9 @@
 ALL_CARDS = [
-  'Ace', 'Ace', 'Ace', 'Ace',
-  '2', '2', '2', '2',
-  '3', '3', '3', '3',
-  '4', '4', '4', '4',
-  '5', '5', '5', '5',
-  '6', '6', '6', '6',
-  '7', '7', '7', '7',
-  '8', '8', '8', '8',
-  '9', '9', '9', '9',
-  '10', '10', '10', '10',
-  'Jack', 'Jack', 'Jack', 'Jack',
-  'Queen', 'Queen', 'Queen', 'Queen',
-  'King', 'King', 'King', 'King'
+  ['2', 2], ['3', 3], ['4', 4],
+  ['5', 5], ['6', 6], ['7', 7],
+  ['8', 8], ['9', 9], ['10', 10],
+  ['Jack', 10], ['Queen', 10], ['King', 10],
+  ['Ace', 11] # Aces may be worth 1 instead to prevent busting
 ]
 
 def prompt(msg)
@@ -26,24 +18,25 @@ def deal_starting_hands!(game_data)
 end
 
 def list_cards(hand, separator_string = ', ', final_separator = 'and')
+  names = hand.map { |card| card[0] }
+
   if hand.size > 2
-    final_card = hand.last
-    mostly_joined = hand[(0..(hand.size - 2))].join(separator_string)
+    final_card = names.last
+    mostly_joined = names[(0..(names.size - 2))].join(separator_string)
     "#{mostly_joined}#{separator_string}#{final_separator} #{final_card}"
   else
-    hand.join(" #{final_separator} ")
+    names.join(" #{final_separator} ")
   end
 end
 
 def announce_visible_dealer_cards(dealer_hand)
-  visible_dealer_cards = dealer_hand[(1..dealer_hand.size)].join(', ')
+  card_names = dealer_hand.map { |card| card[0] }
+  visible_dealer_cards = card_names[(1..card_names.size)].join(', ')
   prompt "Dealer has: #{visible_dealer_cards} and one unknown card."
 end
 
 def show_available_info(game_data)
   prompt "The game is: '#{game_data[:game_name_limit]}'"
-  prompt "Your stash: #{game_data[:player][:stash]} smackums."
-  prompt "Dealer's stash: #{game_data[:dealer][:stash]} smackums."
   announce_visible_dealer_cards(game_data[:dealer][:hand])
   prompt "You have: #{list_cards(game_data[:player][:hand])}."
   prompt "Your current total is: #{game_data[:player][:total]}."
@@ -65,6 +58,7 @@ end
 
 def display_result(game_data)
   prompt "The pot had a total of #{game_data[:pot]} smackums."
+  puts '-----------------------------'
 
   case detect_result(game_data)
   when :p_busted then prompt "You busted! Dealer wins!"
@@ -74,6 +68,7 @@ def display_result(game_data)
   when :tie then prompt "This game is a tie, so the house takes the pot!"
   end
 
+  puts '-----------------------------'
   prompt "Player stash: #{game_data[:player][:stash]}."
   prompt "Dealer stash: #{game_data[:dealer][:stash]}."
 end
@@ -89,12 +84,12 @@ def end_of_round_output(game_data)
   p_list = list_cards(game_data[:player][:hand])
 
   system 'clear'
-  puts "=============="
+  puts "==========================="
   prompt "The name of the game is '#{game_data[:game_name_limit]}'"
   prompt "Dealer has #{d_list}, a total of #{game_data[:dealer][:total]}."
   prompt "You have #{p_list}, a total of #{game_data[:player][:total]}."
   display_result(game_data)
-  puts "============="
+  puts "==========================="
 end
 
 def busted?(game_data, hand_total)
@@ -102,17 +97,8 @@ def busted?(game_data, hand_total)
 end
 
 def update_total!(game_data, p_or_d)
-  total_aces = p_or_d[:hand].count('Ace')
-  total_value = total_aces * 11
-  all_cards_except_aces = p_or_d[:hand].reject { |card| card == 'Ace' }
-
-  all_cards_except_aces.each do |card|
-    total_value += if card.to_i == 0
-                     10
-                   else
-                     card.to_i
-                   end
-  end
+  total_aces = p_or_d[:hand].count(['Ace', 11])
+  total_value = p_or_d[:hand].map { |card| card[1] }.sum
 
   while (total_value > game_data[:game_name_limit]) && (total_aces > 0)
     total_value -= 10
@@ -134,9 +120,13 @@ def find_lower_stash(game_data)
   end
 end
 
-def place_bets!(game_data)
-  bet = 0
+def place_bet!(game_data)
   lower_stash = find_lower_stash(game_data)
+  bet = 0
+  puts '-----------------------'
+  prompt "Your stash: #{game_data[:player][:stash]} smackums."
+  prompt "Dealer's stash: #{game_data[:dealer][:stash]} smackums."
+  puts '-----------------------'
 
   loop do
     prompt "Place your bet, up to #{lower_stash}."
@@ -145,9 +135,13 @@ def place_bets!(game_data)
     prompt "The bet has to be between 0 and the smaller of our two stashes."
   end
 
-  game_data[:player][:stash] -= bet
-  game_data[:dealer][:stash] -= bet
-  game_data[:pot] += (bet * 2)
+  game_data[:current_bet] = bet
+end
+
+def fill_pot!(game_data)
+  game_data[:player][:stash] -= game_data[:current_bet]
+  game_data[:dealer][:stash] -= game_data[:current_bet]
+  game_data[:pot] += (game_data[:current_bet] * 2)
 
   puts "-----------------------"
   prompt "The pot has a total of #{game_data[:pot]} smackums."
@@ -201,7 +195,7 @@ def start_game!(game_data)
 
   game_data[:player][:hand] = []
   game_data[:dealer][:hand] = []
-  game_data[:deck] = ALL_CARDS.shuffle
+  game_data[:deck] = (ALL_CARDS * 4).shuffle
 
   deal_starting_hands!(game_data)
 end
@@ -261,7 +255,8 @@ loop do # main program loop
     deck: [],
     game_name_limit: 21,
     dealer_stays_at: 17,
-    pot: 0
+    pot: 0,
+    current_bet: 0
   }
 
   round = 0
@@ -281,7 +276,8 @@ loop do # main program loop
     game_data[:pot] = 0
     update_total!(game_data, game_data[:player])
     show_available_info(game_data)
-    place_bets!(game_data)
+    place_bet!(game_data)
+    fill_pot!(game_data)
 
     # player turn
     player_turn(game_data)
@@ -315,7 +311,7 @@ loop do # main program loop
 
   # end of match output based on stash sizes
   if game_data[:player][:stash] <= 0
-    prompt "Come play with me again next time your wallet's weighing you down!"
+    prompt "BAM! Come back next time your wallet's weighing you down!"
   elsif game_data[:dealer][:stash] <= 0
     prompt "HOO BOY...time to see if I've got any more internal organs to sell."
   elsif game_data[:player][:stash] > game_data[:dealer][:stash]
