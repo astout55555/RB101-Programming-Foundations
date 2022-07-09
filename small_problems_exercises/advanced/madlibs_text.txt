@@ -1,0 +1,4 @@
+The %{adjective} %{adjective} %{noun} %{adverb}
+%{verb} the %{adjective} %{adjective}
+%{noun}, who %{adverb} %{verb} his
+%{noun} and %{verb} around %{adverb}.
