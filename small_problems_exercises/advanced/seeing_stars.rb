@@ -69,3 +69,23 @@ def star(grid_size) # the various space-saving measures allow a more descriptive
   puts '*' * grid_size 
   1.upto(max_distance)   { |distance| print_row(grid_size, distance) }
 end # like my solution, upper and lower halves are produced separately, but more legibly
+
+## Student's Solution:
+
+def star(n)
+  spaces = ' ' * (n / 2 - 1)
+  line = "*#{spaces}*#{spaces}*"
+  top_lines = [line]
+
+  until spaces.empty?
+    spaces.chop!
+    line = "*#{spaces}*#{spaces}*".center(n) # like LS solution, uses #center to simplify things
+    top_lines << line
+  end
+
+  puts [top_lines, ('*' * n), top_lines.reverse]
+end # clever solution to use an array with #puts and with #reverse
+
+## Further Exploration: make a circle, make a sine wave
+# I'm going to skip this for now because it's rather complicated
+# I'll move onto the rest of these already optional advanced exercises instead
