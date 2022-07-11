@@ -90,3 +90,59 @@ def merge_sort(array)
 end
 
 ## Further Exploration: write a non-recursive merge_sort method
+
+=begin
+
+Algorithm:
+
+split the array into two halves
+push both halves into an empty main array
+
+in a loop
+  counter = 0
+  iterate through the sub-arrays in the main array with index val
+    next if sub-array size is 1
+    otherwise, split into two halves
+    put these halves into a containing array
+    reinsert this containing array into the same place in the main array (reassingment using index val)
+    iterate through this container of sub-arrays with index val
+      next if sub-array size is 1
+      otherwise, split into two halves
+      put these halves into a containing array
+      reinsert this containing array into the same place in the iterating array
+      iterate through this container of sub-arrays with index val
+        next if sub-array size is 1
+        otherwise, split into two halves
+        put these halves into a containing array
+        reinsert this containing array into the same place in the iterating array
+      ...
+    counter += 1
+  break if counter is still 0 (indicates all sub-arrays were skipped)
+...
+
+^^^I ended up just writing out a recursive process, which doesn't solve the problem.
+
+I found an elegant solution from a student, which doesn't quite replicate the behavior
+of the recursive merge_sort, in that it doesn't actually break down the array into quite
+as deeply nested arrays first. Instead, it accomplishes the same result by breaking
+all elements into individual sub-arrays first, and then combining sets of 2 with #merge and
+placing them in a temporary array for further combination.
+
+def merge_sort(array)
+  return array if array.size == 1
+  result = array.each_slice(1).to_a # breaks main array into single-element arrays
+
+  loop do
+    temp = []
+    idx = 0
+    while idx < result.size - 1 # updates based on modified result each loop
+      temp << merge(result[idx], result[idx + 1]) # targets adjacent elements to merge
+      idx += 2 # skips to the next potential set of 2
+      temp << result[idx] if idx == result.size - 1 # handles the final item
+    end
+    result = temp # updates the result
+    return result[0] if result[0].size == array.size 
+  end # breaks out of the loop once all sub-arrays have been merged
+end
+
+=end
